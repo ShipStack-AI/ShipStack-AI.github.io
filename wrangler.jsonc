@@ -1,0 +1,10 @@
+{
+  // Static site: Wrangler only uploads the built `dist` folder. No Worker code, no adapter.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ship-stack",
+  "compatibility_date": "2026-10-23",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

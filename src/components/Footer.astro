@@ -1,0 +1,119 @@
+---
+import { GITHUB_ORG, modules } from '../data/modules';
+
+const built = modules.filter((m) => m.status === 'built').length;
+const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+const say = (n: number) => words[n] ?? String(n);
+const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
+
+const rev = (process.env.GITHUB_SHA ?? 'local').slice(0, 7);
+const links = [
+  ['GitHub organization', GITHUB_ORG],
+  ['MIT license', `${GITHUB_ORG}/website/blob/main/LICENSE`],
+  ['Security policy', `${GITHUB_ORG}/rate-limit/blob/main/SECURITY.md`],
+  ['Contribute an adapter', `${GITHUB_ORG}/rate-limit#custom-stores`],
+];
+---
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__grid">
+      <div>
+        <p class="foot__mark">Parts, not platforms<span>.</span></p>
+        <p class="foot__sub">
+          {cap(say(modules.length))} small MIT packages with one shape. {cap(say(built))} built, {say(modules.length - built)} on the bench.
+        </p>
+      </div>
+      <ul class="foot__links" role="list">
+        {
+          links.map(([label, href]) => (
+            <li>
+              <a href={href} rel="noopener">{label}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="foot__plate mono">
+      <span>ShipStack AI</span>
+      <span>Catalog rev. {rev}</span>
+      <span>MIT · 2026 ShipStack AI contributors</span>
+      <span>No cookies, no analytics, no third-party requests</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .foot {
+    --foot-bg: #141414;
+    --foot-fg: #f4f1ea;
+    padding-block: var(--s10) var(--s4);
+    background: var(--foot-bg);
+    color: var(--foot-fg);
+    --line-strong: color-mix(in srgb, var(--foot-fg) 30%, transparent);
+  }
+  :global([data-theme='dark']) .foot {
+    --foot-bg: #06142a;
+    --foot-fg: #e8f0f8;
+    border-top: 1px solid var(--line);
+  }
+  .foot__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--s6);
+    align-items: end;
+  }
+  .foot__mark {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+  }
+  .foot__mark span {
+    color: var(--signal);
+  }
+  .foot__sub {
+    margin-top: var(--s2);
+    color: color-mix(in srgb, var(--foot-fg) 75%, transparent);
+  }
+  .foot__links {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--line-strong);
+  }
+  .foot__links a {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line-strong);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: var(--foot-fg);
+  }
+  .foot__links a::after {
+    content: '↗';
+  }
+  .foot__links a:hover {
+    color: var(--signal);
+  }
+  .foot__plate {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s1) var(--s4);
+    margin-top: var(--s8);
+    padding-top: var(--s2);
+    border-top: 1px solid var(--line-strong);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--foot-fg) 75%, transparent);
+  }
+  @media (max-width: 760px) {
+    .foot__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

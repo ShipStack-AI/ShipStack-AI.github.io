@@ -1,0 +1,46 @@
+---
+import { Code } from 'astro:components';
+import { inkDark, inkLight } from '../data/shiki-themes.mjs';
+
+interface Props {
+  code: string;
+  lang?: 'ts' | 'sh' | 'json';
+  label?: string;
+  note?: string;
+  copy?: boolean;
+  class?: string;
+}
+
+const { code, lang = 'ts', label, note, copy = true, class: cls } = Astro.props;
+---
+
+<figure class:list={['code', cls]}>
+  {
+    (label || copy) && (
+      <figcaption class="code__bar">
+        <span class="label">{label}</span>
+        {copy && (
+          <button class="copy" type="button" data-copy={code} aria-label={`Copy ${label ?? 'code'}`}>
+            Copy
+          </button>
+        )}
+      </figcaption>
+    )
+  }
+  <Code code={code} lang={lang} themes={{ light: inkLight, dark: inkDark }} defaultColor={false} />
+  {note && <p class="code__note">{note}</p>}
+</figure>
+
+<style>
+  figure {
+    margin: 0;
+    min-width: 0;
+  }
+  .code__note {
+    padding: 10px var(--s2);
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+</style>

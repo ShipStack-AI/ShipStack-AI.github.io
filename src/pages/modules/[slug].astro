@@ -1,0 +1,179 @@
+---
+import CodeBlock from '../../components/CodeBlock.astro';
+import { type Module, modules, npmUrl, repoUrl, STATUS_LABEL } from '../../data/modules';
+import Base from '../../layouts/Base.astro';
+
+export function getStaticPaths() {
+  return modules.map((m) => ({ params: { slug: m.slug }, props: { m } }));
+}
+
+const { m } = Astro.props as { m: Module };
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const i = modules.indexOf(m);
+const prev = modules[(i - 1 + modules.length) % modules.length]!;
+const next = modules[(i + 1) % modules.length]!;
+---
+
+<Base title={`${m.part} ${m.name} · ShipStack AI`} description={m.purpose}>
+  <article class="ds wrap">
+    <nav class="ds__crumbs label" aria-label="Breadcrumb">
+      <a href={`${base}/#parts`}>Parts bin</a> / <span aria-current="page">{m.part}</span>
+    </nav>
+
+    <header class="ds__head">
+      <div class="ds__id">
+        <span class="ds__no mono">{m.part}</span>
+        <span class:list={['chip', `chip--${m.status}`]}>{STATUS_LABEL[m.status]}</span>
+      </div>
+      <h1>{m.name}</h1>
+      <p class="ds__purpose">{m.purpose}</p>
+      <code class="ds__pkg">{m.pkg}</code>
+    </header>
+
+    <div class="ds__grid">
+      <section aria-labelledby="spec-h" class="ds__spec">
+        <h2 id="spec-h" class="label label--ink">Specification</h2>
+        <dl>
+          <div><dt class="label">Reference adapter</dt><dd>{m.referenceAdapter}</dd></div>
+          <div><dt class="label">Adapters</dt><dd>{m.adapters.join(', ')}</dd></div>
+          {m.spec.map(([k, v]) => <div><dt class="label">{k}</dt><dd>{v}</dd></div>)}
+          <div><dt class="label">npm</dt><dd>{m.published ? <a href={npmUrl(m)}>{m.pkg}</a> : 'not published yet'}</dd></div>
+          <div><dt class="label">Source</dt><dd><a href={repoUrl(m)} rel="noopener">github.com/ShipStack-AI/{m.repo}</a></dd></div>
+        </dl>
+        <h2 class="label label--ink ds__def-h">Deferred (not in v0.1)</h2>
+        <ul class="ds__deferred">{m.deferred.map((d) => <li>{d}</li>)}</ul>
+      </section>
+
+      <section aria-labelledby="ex-h" class="ds__ex">
+        <h2 id="ex-h" class="label label--ink">Example</h2>
+        {
+          m.snippet.kind === 'source' ? (
+            <CodeBlock
+              code={m.snippet.code.trimEnd()}
+              label="examples/basic.ts"
+              note={`Verbatim from ShipStack-AI/${m.repo}@${m.snippet.ref}, with relative imports rewritten to package paths.`}
+            />
+          ) : (
+            <>
+              <p class="ds__warn">
+                <strong>Placeholder.</strong> This part is not shipped. The snippet sketches the planned v0.1 API from the
+                design contract and will be replaced by the real <code>examples/basic.ts</code> when the repo lands.
+              </p>
+              <CodeBlock code={m.snippet.code} label="planned API · placeholder" />
+            </>
+          )
+        }
+      </section>
+    </div>
+
+    <nav class="ds__pager" aria-label="Other parts">
+      <a href={`${base}/modules/${prev.slug}/`}><span class="label">Previous</span>{prev.part} {prev.name}</a>
+      <a href={`${base}/modules/${next.slug}/`}><span class="label">Next</span>{next.part} {next.name}</a>
+    </nav>
+  </article>
+</Base>
+
+<style>
+  .ds {
+    padding-block: var(--s8) var(--s12);
+  }
+  .ds__crumbs a {
+    color: inherit;
+  }
+  .ds__head {
+    display: grid;
+    gap: var(--s2);
+    padding-block: var(--s4) var(--s5);
+    border-bottom: 2px solid var(--ink);
+  }
+  .ds__id {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+  .ds__no {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  h1 {
+    font-size: clamp(3rem, 9vw, 7rem);
+    letter-spacing: -0.05em;
+  }
+  .ds__purpose {
+    max-width: 48ch;
+    font-size: 1.25rem;
+    color: var(--ink-2);
+  }
+  .ds__pkg {
+    font-size: 0.9375rem;
+    color: var(--signal-ink);
+  }
+  .ds__grid {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: var(--s6);
+    margin-top: var(--s5);
+  }
+  .ds__spec dl {
+    margin: var(--s1) 0 0;
+    border-top: 1px solid var(--line-strong);
+  }
+  .ds__spec dl div {
+    display: grid;
+    gap: 2px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .ds__spec dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+  .ds__def-h {
+    margin-top: var(--s4);
+  }
+  .ds__deferred {
+    margin: var(--s1) 0 0;
+    padding-left: 1.2em;
+    color: var(--ink-2);
+  }
+  .ds__ex {
+    display: grid;
+    gap: var(--s2);
+    align-content: start;
+    min-width: 0;
+  }
+  .ds__warn {
+    padding: var(--s2);
+    border: 1.5px dashed var(--signal);
+    color: var(--ink-2);
+  }
+  .ds__warn strong {
+    color: var(--ink);
+  }
+  .ds__pager {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s2);
+    margin-top: var(--s10);
+  }
+  .ds__pager a {
+    display: grid;
+    gap: 4px;
+    padding: var(--s2);
+    border: 1.5px solid var(--ink);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+  .ds__pager a:last-child {
+    text-align: right;
+  }
+  @media (max-width: 860px) {
+    .ds__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

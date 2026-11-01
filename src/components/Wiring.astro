@@ -1,0 +1,360 @@
+---
+import { modules } from '../data/modules';
+import SectionHead from './SectionHead.astro';
+
+const W = 200;
+const H = 88;
+const pos: Record<string, [number, number]> = {
+  auth: [40, 96],
+  rbac: [580, 24],
+  'rate-limit': [580, 168],
+  notifications: [40, 312],
+  jobs: [580, 312],
+  billing: [40, 480],
+  webhooks: [580, 480],
+  'file-storage': [960, 312],
+};
+const chips = modules.map((m) => ({ m, x: pos[m.slug]![0], y: pos[m.slug]![1] }));
+
+// Integrations from the phase-0 contract (section 4). Each wire is a structural type, not a package dependency.
+const wires = [
+  { from: 'auth', to: 'rbac', signal: 'Principal', d: 'M240,124 H330 V68 H580', lx: 455, ly: 68, carries: 'session.user satisfies Principal; rbac.can(user, permission)' },
+  { from: 'auth', to: 'rate-limit', signal: 'RateLimiterLike', d: 'M240,156 H360 V212 H580', lx: 470, ly: 212, carries: 'createAuth({ rateLimiter }) guards sign-in and password reset' },
+  { from: 'notifications', to: 'jobs', signal: 'QueueLike', d: 'M240,356 H580', lx: 410, ly: 356, carries: 'notify() enqueues notifications.deliver; a jobs worker sends it' },
+  { from: 'webhooks', to: 'jobs', signal: 'QueueLike', d: 'M680,480 V400', lx: 692, ly: 444, anchor: 'start', carries: 'retries scheduled with delayMs instead of an inline loop' },
+  { from: 'billing', to: 'webhooks', signal: 'ShipStackEvent', d: 'M240,524 H580', lx: 410, ly: 524, carries: 'billing.subscription.* events forwarded to webhooks.send()' },
+];
+---
+
+<section class="section" id="wiring" aria-labelledby="wiring-title">
+  <div class="wrap">
+    <SectionHead no="03" kicker="Wiring diagram" title="Parts connect by shape, not by import." id="wiring-title">
+      No part depends on another package. Each one declares the small structural type it consumes, so auth plugs into
+      rbac because a session user already is a <code>Principal</code>. Wires are labelled with the type they carry.
+    </SectionHead>
+
+    <div class="wiring crop">
+      <div class="wiring__scroll" tabindex="0" aria-label="Wiring diagram, scrolls horizontally on small screens">
+        <svg class="wiring__svg" viewBox="0 0 1200 600" role="img" aria-labelledby="wd-title wd-desc">
+          <title id="wd-title">Schematic of how ShipStack parts connect</title>
+          <desc id="wd-desc">
+            auth connects to rbac via Principal and to rate-limit via RateLimiterLike. notifications and webhooks
+            connect to jobs via QueueLike. billing connects to webhooks via ShipStackEvent. file-storage stands alone. The
+            netlist table below lists the same connections.
+          </desc>
+
+          <g class="wires">
+            {
+              wires.map((w, i) => (
+                <g class="wire" style={`--i:${i}`}>
+                  <path class="wire__path" d={w.d} pathLength="1" />
+                  <g class="wire__label">
+                    <rect
+                      x={w.anchor === 'start' ? w.lx - 4 : w.lx - (w.signal.length * 7.8) / 2 - 8}
+                      y={w.ly - 11}
+                      width={w.signal.length * 7.8 + 16}
+                      height="22"
+                    />
+                    <text x={w.anchor === 'start' ? w.lx + 4 : w.lx} y={w.ly + 4} text-anchor={w.anchor ?? 'middle'}>
+                      {w.signal}
+                    </text>
+                  </g>
+                </g>
+              ))
+            }
+          </g>
+
+          {
+            chips.map(({ m, x, y }) => (
+              <g class:list={['chip-g', `chip-g--${m.status}`]}>
+                <rect class="chip-g__body" x={x} y={y} width={W} height={H} />
+                {m.status === 'built' && <rect class="chip-g__tab" x={x} y={y} width={W} height="6" />}
+                <text class="chip-g__no" x={x + 14} y={y + 26}>{m.part}</text>
+                <text class="chip-g__state" x={x + W - 14} y={y + 26} text-anchor="end">
+                  {m.status === 'built' ? 'BUILT' : 'IN PROGRESS'}
+                </text>
+                <text class="chip-g__name" x={x + 14} y={y + 62}>{m.name}</text>
+                <rect class="chip-g__evt" x={x + W - 34} y={y + H - 4} width="20" height="8" />
+              </g>
+            ))
+          }
+
+          <text class="aside" x="1060" y="436" text-anchor="middle">standalone</text>
+          <text class="aside" x="1060" y="456" text-anchor="middle">no wires needed</text>
+
+          <g class="legend" transform="translate(960 40)">
+            <rect class="legend__box" x="0" y="0" width="200" height="200" />
+            <text class="legend__title" x="16" y="28">LEGEND</text>
+            <line class="wire__path legend__wire" x1="16" y1="56" x2="64" y2="56" />
+            <text class="legend__text" x="76" y="60">structural type</text>
+            <rect class="chip-g__body legend__solid" x="16" y="80" width="48" height="24" />
+            <text class="legend__text" x="76" y="96">built</text>
+            <rect class="chip-g__body legend__dash" x="16" y="120" width="48" height="24" />
+            <text class="legend__text" x="76" y="136">in progress</text>
+            <rect class="chip-g__evt" x="30" y="168" width="20" height="8" />
+            <text class="legend__text" x="76" y="176">EVT: onEvent</text>
+          </g>
+        </svg>
+      </div>
+      <p class="wiring__hint label">Scroll the drawing sideways →</p>
+    </div>
+
+    <div class="netlist">
+      <table>
+        <caption class="label label--ink">Netlist · every wire above, in text</caption>
+        <thead>
+          <tr>
+            <th scope="col">Net</th>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col">Signal</th>
+            <th scope="col">What it carries</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            wires.map((w, i) => (
+              <tr>
+                <td class="mono">N{String(i + 1).padStart(2, '0')}</td>
+                <td class="mono">{w.from}</td>
+                <td class="mono">{w.to}</td>
+                <td>
+                  <code>{w.signal}</code>
+                </td>
+                <td>{w.carries}</td>
+              </tr>
+            ))
+          }
+          <tr>
+            <td class="mono">EVT</td>
+            <td class="mono">every part</td>
+            <td class="mono">your app</td>
+            <td><code>ShipStackEvent</code></td>
+            <td>each state-changing command calls onEvent: pipe it to an audit table, logs or analytics</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+  const svg = document.querySelector<SVGSVGElement>('.wiring__svg');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (svg && !reduce && 'IntersectionObserver' in window) {
+    svg.classList.add('is-armed');
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          svg.classList.add('is-drawn');
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+    io.observe(svg);
+  }
+</script>
+
+<style>
+  .wiring {
+    --crop-c: var(--blue);
+    padding: var(--s3);
+    border: 1px solid var(--line);
+  }
+  .wiring__scroll {
+    overflow-x: auto;
+  }
+  .wiring__scroll:focus-visible {
+    outline-offset: -2px;
+  }
+  .wiring__svg {
+    display: block;
+    width: 100%;
+    min-width: 760px;
+    height: auto;
+    font-family: var(--font-mono);
+  }
+  .wiring__hint {
+    display: none;
+    margin-top: var(--s1);
+  }
+
+  .wire__path {
+    fill: none;
+    stroke: var(--signal);
+    stroke-width: 2.5;
+    stroke-linejoin: miter;
+  }
+  .wire__label rect {
+    fill: var(--paper);
+    stroke: var(--signal);
+    stroke-width: 1;
+  }
+  .wire__label text {
+    fill: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .chip-g__body {
+    fill: var(--paper);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .chip-g--in-progress .chip-g__body,
+  .legend__dash {
+    stroke: var(--ink-3);
+    stroke-dasharray: 6 4;
+    stroke-width: 1.5;
+  }
+  .chip-g__tab {
+    fill: var(--signal);
+  }
+  .chip-g__no {
+    fill: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .chip-g__state {
+    fill: var(--ink-3);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .chip-g__name {
+    fill: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .chip-g--in-progress .chip-g__name {
+    fill: var(--ink-2);
+  }
+  .chip-g__evt {
+    fill: var(--blue);
+  }
+  .aside {
+    fill: var(--ink-3);
+    font-size: 12px;
+  }
+  .legend__box {
+    fill: var(--paper-2);
+    stroke: var(--line-strong);
+  }
+  .legend__title {
+    fill: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .legend__text {
+    fill: var(--ink-2);
+    font-size: 12px;
+  }
+
+  /* Draw-in, once, only when JS armed it and motion is allowed. */
+  .is-armed .wire__path:not(.legend__wire) {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 900ms var(--ease);
+    transition-delay: calc(var(--i) * 180ms);
+  }
+  .is-armed .wire__label {
+    opacity: 0;
+    transition: opacity 300ms var(--ease);
+    transition-delay: calc(var(--i) * 180ms + 700ms);
+  }
+  .is-armed.is-drawn .wire__path {
+    stroke-dashoffset: 0;
+  }
+  .is-armed.is-drawn .wire__label {
+    opacity: 1;
+  }
+  .netlist {
+    margin-top: var(--s4);
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+  caption {
+    text-align: left;
+    padding-bottom: var(--s1);
+  }
+  th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 2px solid var(--ink);
+    padding: var(--s1) var(--s2) var(--s1) 0;
+  }
+  td {
+    padding: 12px var(--s2) 12px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+  td.mono {
+    font-size: 0.8125rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  td code {
+    font-size: 0.8125rem;
+    color: var(--signal-ink);
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    table,
+    tbody,
+    tr {
+      display: block;
+      min-width: 0;
+    }
+    thead {
+      display: none;
+    }
+    caption {
+      display: block;
+    }
+    tr {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      gap: 4px 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    td {
+      padding: 0;
+      border: 0;
+    }
+    td:nth-child(3)::before {
+      content: '→ ';
+      color: var(--ink-3);
+    }
+    td:nth-child(4) {
+      grid-column: 1 / -1;
+    }
+    td:nth-child(5) {
+      grid-column: 1 / -1;
+      font-size: 0.875rem;
+    }
+  }
+  @media (max-width: 860px) {
+    .wiring {
+      padding: var(--s2);
+    }
+    .wiring__hint {
+      display: block;
+    }
+  }
+</style>

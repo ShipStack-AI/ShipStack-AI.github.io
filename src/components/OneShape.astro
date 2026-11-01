@@ -1,0 +1,225 @@
+---
+import CodeBlock from './CodeBlock.astro';
+import SectionHead from './SectionHead.astro';
+
+// All three snippets are the real rate-limit API (README at 465883b).
+const tabs = [
+  {
+    id: 'create',
+    step: '01',
+    title: 'Create',
+    caption: 'One factory per part. Options are validated at construction, so bad config fails at boot, not at 3am.',
+    file: 'limiter.ts',
+    code: `import { createRateLimiter, slidingWindow } from '@shipstack-ai/rate-limit';
+import { memoryStore } from '@shipstack-ai/rate-limit/memory';
+
+const limiter = createRateLimiter({
+  store: memoryStore(),
+  algorithm: slidingWindow(10, '1m'),
+});
+
+const { success, remaining, resetAt } = await limiter.limit('ip:203.0.113.7');`,
+  },
+  {
+    id: 'swap',
+    step: '02',
+    title: 'Swap the store',
+    caption: 'Adapters live behind subpath exports. Going multi-instance changes one line, and ioredis is only installed if you import /redis.',
+    file: 'limiter.ts',
+    code: `import { createRateLimiter, slidingWindow } from '@shipstack-ai/rate-limit';
+import { redisStore } from '@shipstack-ai/rate-limit/redis';
+import { Redis } from 'ioredis';
+
+const limiter = createRateLimiter({
+  store: redisStore({ client: new Redis(process.env.REDIS_URL!) }), // was memoryStore()
+  algorithm: slidingWindow(10, '1m'),
+});`,
+  },
+  {
+    id: 'prove',
+    step: '03',
+    title: 'Prove it',
+    caption: 'The same conformance suite runs against every store. Yours too: pass it and it is a drop-in part.',
+    file: 'store.contract.test.ts',
+    code: `import { runRateLimitStoreContract } from '@shipstack-ai/rate-limit/testing';
+import { memoryStore } from '@shipstack-ai/rate-limit/memory';
+import { redisStore } from '@shipstack-ai/rate-limit/redis';
+
+runRateLimitStoreContract('memory', () => memoryStore());
+runRateLimitStoreContract('redis', () => redisStore({ client }));
+runRateLimitStoreContract('my store', () => myStore());`,
+  },
+];
+---
+
+<section class="section" id="shape" aria-labelledby="shape-title">
+  <div class="wrap">
+    <SectionHead no="02" kicker="One shape" title="Learn one part, know them all." id="shape-title">
+      Every part follows the same assembly drawing: <code>create&lt;Part&gt;(&#123; adapter &#125;)</code>, adapters as
+      subpath imports, and a contract suite every adapter must pass. Shown here with rate-limit, the first part off the line.
+    </SectionHead>
+
+    <div class="shape">
+      <div class="shape__tabs" role="tablist" aria-label="One shape, three steps">
+        {
+          tabs.map((t, i) => (
+            <button
+              class="shape__tab"
+              type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-controls={`panel-${t.id}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              <span class="shape__step">{t.step}</span>
+              <span class="shape__title">{t.title}</span>
+            </button>
+          ))
+        }
+      </div>
+      {
+        tabs.map((t, i) => (
+          <div class="shape__panel" role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} data-hidden={i !== 0 ? '' : undefined}>
+            <p class="shape__caption">
+              <span class="label label--ink">Step {t.step}</span>
+              {t.caption}
+            </p>
+            <CodeBlock code={t.code} label={t.file} />
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  for (const list of document.querySelectorAll<HTMLElement>('[role="tablist"]')) {
+    const tabs = [...list.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const select = (tab: HTMLButtonElement, focus = false) => {
+      for (const t of tabs) {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        const panel = document.getElementById(t.getAttribute('aria-controls')!);
+        if (panel) panel.hidden = !on;
+      }
+      if (focus) tab.focus();
+    };
+    for (const t of tabs) {
+      const panel = document.getElementById(t.getAttribute('aria-controls')!);
+      if (panel?.hasAttribute('data-hidden')) panel.hidden = true;
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => {
+        const i = tabs.indexOf(t);
+        const next =
+          e.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length] :
+          e.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length] :
+          e.key === 'Home' ? tabs[0] :
+          e.key === 'End' ? tabs[tabs.length - 1] : null;
+        if (next) {
+          e.preventDefault();
+          select(next, true);
+        }
+      });
+    }
+  }
+</script>
+
+<style>
+  .shape {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 0 var(--s4);
+  }
+  .shape__tabs {
+    display: flex;
+    flex-direction: column;
+    grid-row: span 3;
+    border-top: 2px solid var(--ink);
+  }
+  .shape__tab {
+    appearance: none;
+    display: flex;
+    align-items: baseline;
+    gap: var(--s2);
+    width: 100%;
+    min-height: 64px;
+    padding: var(--s2) 0;
+    border: 0;
+    border-bottom: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink-3);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    transition: color 160ms var(--ease), padding 160ms var(--ease);
+  }
+  .shape__tab:hover {
+    color: var(--ink);
+  }
+  .shape__tab[aria-selected='true'] {
+    color: var(--ink);
+    padding-left: var(--s2);
+    box-shadow: inset 4px 0 0 var(--signal);
+  }
+  .shape__step {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  .shape__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  /* Without JS every panel shows, stacked. */
+  .shape__panel + .shape__panel {
+    margin-top: var(--s4);
+  }
+  :global(.js) .shape__panel + .shape__panel {
+    margin-top: 0;
+  }
+  .shape__panel[hidden] {
+    display: none;
+  }
+  .shape__caption {
+    display: grid;
+    gap: var(--s1);
+    max-width: 60ch;
+    min-height: 88px;
+    margin-bottom: var(--s2);
+    color: var(--ink-2);
+  }
+  @media (max-width: 860px) {
+    .shape {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .shape__tabs {
+      flex-direction: row;
+      grid-row: auto;
+      margin-bottom: var(--s3);
+      border-top: 0;
+      border-bottom: 2px solid var(--ink);
+      overflow-x: auto;
+    }
+    .shape__tab {
+      flex: 1;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 104px;
+      padding: var(--s1) var(--s1) var(--s2);
+      border-bottom: 0;
+    }
+    .shape__tab[aria-selected='true'] {
+      padding-left: var(--s1);
+      box-shadow: inset 0 -4px 0 var(--signal);
+    }
+    .shape__title {
+      font-size: 1.0625rem;
+    }
+    .shape__caption {
+      min-height: 0;
+    }
+  }
+</style>

@@ -250,12 +250,11 @@ pre,
 
 .chip--built {
   color: var(--ink);
-  background: var(--signal);
-  border-color: var(--signal);
+  border-color: var(--ink);
 }
 
-:root[data-theme='dark'] .chip--built {
-  color: var(--on-signal);
+.chip--built::before {
+  background: var(--signal);
 }
 
 .chip--in-progress {
@@ -387,8 +386,27 @@ pre,
   overflow-x: auto;
   font-size: 0.8125rem;
   line-height: 1.7;
-  background: var(--paper-2) !important;
   tab-size: 2;
+  /* Scroll affordance: a soft edge appears on whichever side has hidden code. */
+  background:
+    linear-gradient(to right, var(--paper-2) 40%, transparent) left / 32px 100% no-repeat local,
+    linear-gradient(to left, var(--paper-2) 40%, transparent) right / 32px 100% no-repeat local,
+    linear-gradient(to right, var(--line-strong), transparent) left / 12px 100% no-repeat scroll,
+    linear-gradient(to left, var(--line-strong), transparent) right / 12px 100% no-repeat scroll,
+    var(--paper-2) !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-3) transparent;
+}
+
+.code pre:focus-visible,
+.prose pre:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Wrapped code keeps its indentation; long lines continue on the next row. */
+.code--wrap pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .astro-code,
@@ -444,11 +462,16 @@ pre,
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .code pre,
   .prose pre {
     font-size: 0.75rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
+}
+
+@media (max-width: 480px) {
   .section {
     padding-block: var(--s10);
   }

@@ -29,22 +29,60 @@ const nav = [
       </ul>
     </nav>
     <div class="top__tools">
-      <a class="tool" href={GITHUB_ORG} rel="noopener">GitHub</a>
+      <a class="tool tool--gh" href={GITHUB_ORG} rel="noopener">GitHub</a>
       <button class="tool theme-toggle" type="button" aria-label="Switch to dark blueprint mode" hidden>
         <span class="theme-toggle__icon" aria-hidden="true"></span>
         <span class="theme-toggle__text">Blueprint</span>
       </button>
+      <details class="menu">
+        <summary class="tool menu__btn">
+          <span class="menu__icon" aria-hidden="true"></span>
+          Menu
+        </summary>
+        <nav class="menu__panel" aria-label="Sections">
+          <ol>
+            {
+              nav.map(([label, id], i) => (
+                <li>
+                  <a href={`${home}#${id}`}>
+                    <span class="menu__no">§{String(i + 1).padStart(2, '0')}</span>
+                    {label}
+                  </a>
+                </li>
+              ))
+            }
+            <li>
+              <a href={GITHUB_ORG} rel="noopener">
+                <span class="menu__no">↗</span>GitHub
+              </a>
+            </li>
+          </ol>
+        </nav>
+      </details>
     </div>
   </div>
 </header>
 
 <script>
+  // Mobile menu is a native <details>; JS only closes it after a jump or on Escape.
+  const menu = document.querySelector<HTMLDetailsElement>('.menu');
+  if (menu) {
+    menu.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) menu.open = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+      }
+    });
+  }
+
   const btn = document.querySelector<HTMLButtonElement>('.theme-toggle');
   if (btn) {
     const root = document.documentElement;
     const sync = () => {
       const dark = root.dataset.theme === 'dark';
-      btn.setAttribute('aria-pressed', String(dark));
       btn.setAttribute('aria-label', dark ? 'Switch to paper (light) mode' : 'Switch to blueprint (dark) mode');
       btn.querySelector('.theme-toggle__text')!.textContent = dark ? 'Paper' : 'Blueprint';
     };
@@ -118,7 +156,7 @@ const nav = [
     color: var(--ink);
     text-decoration: underline;
   }
-  nav {
+  nav:not(.menu__panel) {
     margin-left: auto;
   }
   .top__tools {
@@ -146,12 +184,79 @@ const nav = [
     border: 1.5px solid currentColor;
     background: linear-gradient(135deg, currentColor 50%, transparent 50%);
   }
+  .menu {
+    display: none;
+    position: relative;
+  }
+  .menu__btn {
+    list-style: none;
+  }
+  .menu__btn::-webkit-details-marker {
+    display: none;
+  }
+  .menu__icon {
+    width: 14px;
+    height: 10px;
+    border-block: 1.5px solid currentColor;
+    background: linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat;
+  }
+  .menu[open] .menu__btn {
+    color: var(--ink);
+    border-color: var(--ink);
+    background: var(--paper-2);
+  }
+  .menu__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(280px, calc(100vw - 32px));
+    margin: 0;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--shadow);
+  }
+  .menu__panel ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .menu__panel a {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    min-height: 48px;
+    padding: 0 var(--s2);
+    border-bottom: 1px solid var(--line);
+    font-weight: 600;
+    font-size: 1.0625rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .menu__panel li:last-child a {
+    border-bottom: 0;
+  }
+  .menu__panel a:hover {
+    background: var(--paper-2);
+  }
+  .menu__no {
+    width: 3ch;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--signal-ink);
+  }
   @media (max-width: 900px) {
-    nav {
+    nav:not(.menu__panel) {
       display: none;
     }
     .top__tools {
       margin-left: auto;
+    }
+    .menu {
+      display: block;
+    }
+    .tool--gh {
+      display: none;
     }
   }
   @media (max-width: 420px) {

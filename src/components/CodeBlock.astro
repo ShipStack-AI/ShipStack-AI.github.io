@@ -8,13 +8,15 @@ interface Props {
   label?: string;
   note?: string;
   copy?: boolean;
+  /** Wrap long lines instead of scrolling. */
+  wrap?: boolean;
   class?: string;
 }
 
-const { code, lang = 'ts', label, note, copy = true, class: cls } = Astro.props;
+const { code, lang = 'ts', label, note, copy = true, wrap = false, class: cls } = Astro.props;
 ---
 
-<figure class:list={['code', cls]}>
+<figure class:list={['code', { 'code--wrap': wrap }, cls]}>
   {
     (label || copy) && (
       <figcaption class="code__bar">

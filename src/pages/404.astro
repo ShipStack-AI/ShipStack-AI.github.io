@@ -1,0 +1,107 @@
+---
+import { modules } from '../data/modules';
+import Base from '../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Base title="Part not found · ShipStack AI" description="This page is not in the catalog." noindex>
+  <section class="nf wrap" aria-labelledby="nf-title">
+    <div class="nf__label crop">
+      <div class="nf__head">
+        <span class="nf__no mono">SS-404</span>
+        <span class="chip chip--in-progress">Not in catalog</span>
+      </div>
+      <h1 id="nf-title">Part not found<span class="dot">.</span></h1>
+      <p>
+        Nothing is stocked at this address. It may have moved, or it was never made. These parts are on the shelf:
+      </p>
+      <ul class="nf__parts" role="list">
+        {
+          modules.map((m) => (
+            <li>
+              <a href={`${base}/modules/${m.slug}/`}>
+                <span class="mono">{m.part}</span>
+                {m.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="btn btn--signal" href={`${base}/`}>Back to the catalog <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    padding-block: var(--s10) var(--s12);
+  }
+  .nf__label {
+    display: grid;
+    gap: var(--s3);
+    max-width: 760px;
+    padding: var(--s5);
+    border: 1px solid var(--line-strong);
+    background-color: var(--paper);
+  }
+  .nf__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--s2);
+    border-bottom: 2px solid var(--ink);
+  }
+  .nf__no {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  h1 {
+    font-size: clamp(3rem, 9vw, 6.5rem);
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+  }
+  .dot {
+    color: var(--signal);
+  }
+  p {
+    max-width: 48ch;
+    font-size: 1.125rem;
+    color: var(--ink-2);
+  }
+  .nf__parts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nf__parts a {
+    display: flex;
+    gap: var(--s2);
+    align-items: baseline;
+    padding: 10px 12px;
+    border: 1px solid var(--line-strong);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .nf__parts a:hover {
+    border-color: var(--ink);
+  }
+  .nf__parts .mono {
+    font-size: 0.75rem;
+    color: var(--signal-ink);
+  }
+  .btn {
+    justify-self: start;
+  }
+  @media (max-width: 480px) {
+    .nf__label {
+      padding: var(--s3);
+    }
+    .nf__parts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

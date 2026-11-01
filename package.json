@@ -13,7 +13,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "sync:snippets": "node scripts/sync-snippets.mjs",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "gen:images": "node scripts/gen-images.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.14",

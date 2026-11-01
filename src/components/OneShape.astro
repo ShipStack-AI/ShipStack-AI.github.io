@@ -2,29 +2,30 @@
 import CodeBlock from './CodeBlock.astro';
 import SectionHead from './SectionHead.astro';
 
-// All three snippets are the real rate-limit API (README at 465883b).
+// Real APIs only: constructors from each module's examples/basic.ts, swap and contract from the rate-limit README.
 const tabs = [
   {
     id: 'create',
     step: '01',
     title: 'Create',
-    caption: 'One factory per part. Options are validated at construction, so bad config fails at boot, not at 3am.',
-    file: 'limiter.ts',
-    code: `import { createRateLimiter, slidingWindow } from '@shipstack-ai/rate-limit';
-import { memoryStore } from '@shipstack-ai/rate-limit/memory';
+    caption: 'One factory per part, one options object, adapters from subpaths. Options are validated at construction, so bad config fails at boot, not at 3am.',
+    file: 'parts.ts',
+    code: `import { createFileStorage } from '@shipstack-ai/file-storage';
+import { memoryAdapter as memoryFiles } from '@shipstack-ai/file-storage/memory';
+import { createJobs } from '@shipstack-ai/jobs';
+import { memoryAdapter as memoryQueue } from '@shipstack-ai/jobs/memory';
+import { createRbac, defineRoles } from '@shipstack-ai/rbac';
+import { memoryStore } from '@shipstack-ai/rbac/memory';
 
-const limiter = createRateLimiter({
-  store: memoryStore(),
-  algorithm: slidingWindow(10, '1m'),
-});
-
-const { success, remaining, resetAt } = await limiter.limit('ip:203.0.113.7');`,
+const storage = createFileStorage({ adapter: memoryFiles() });
+const jobs = createJobs({ adapter: memoryQueue() });
+const rbac = createRbac({ roles: defineRoles({ viewer: ['invoice:read'] }), store: memoryStore() });`,
   },
   {
     id: 'swap',
     step: '02',
-    title: 'Swap the store',
-    caption: 'Adapters live behind subpath exports. Going multi-instance changes one line, and ioredis is only installed if you import /redis.',
+    title: 'Swap the adapter',
+    caption: 'Going to production changes one line. Provider SDKs are optional peers, so ioredis is only installed if you import /redis.',
     file: 'limiter.ts',
     code: `import { createRateLimiter, slidingWindow } from '@shipstack-ai/rate-limit';
 import { redisStore } from '@shipstack-ai/rate-limit/redis';
@@ -39,7 +40,7 @@ const limiter = createRateLimiter({
     id: 'prove',
     step: '03',
     title: 'Prove it',
-    caption: 'The same conformance suite runs against every store. Yours too: pass it and it is a drop-in part.',
+    caption: 'Every part ships a conformance suite at /testing. The memory and reference adapters both pass it, and yours can too.',
     file: 'store.contract.test.ts',
     code: `import { runRateLimitStoreContract } from '@shipstack-ai/rate-limit/testing';
 import { memoryStore } from '@shipstack-ai/rate-limit/memory';
@@ -47,7 +48,10 @@ import { redisStore } from '@shipstack-ai/rate-limit/redis';
 
 runRateLimitStoreContract('memory', () => memoryStore());
 runRateLimitStoreContract('redis', () => redisStore({ client }));
-runRateLimitStoreContract('my store', () => myStore());`,
+runRateLimitStoreContract('my store', () => myStore());
+
+// Same idea in every part: runAuthStoreContract, runRbacStoreContract, runJobsAdapterContract,
+// runStorageAdapterContract, runEmailAdapterContract, runWebhooksStoreContract, runBillingStoreContract`,
   },
 ];
 ---
@@ -56,7 +60,7 @@ runRateLimitStoreContract('my store', () => myStore());`,
   <div class="wrap">
     <SectionHead no="02" kicker="One shape" title="Learn one part, know them all." id="shape-title">
       Every part follows the same assembly drawing: <code>create&lt;Part&gt;(&#123; adapter &#125;)</code>, adapters as
-      subpath imports, and a contract suite every adapter must pass. Shown here with rate-limit, the first part off the line.
+      subpath imports, and a contract suite every adapter must pass.
     </SectionHead>
 
     <div class="shape">

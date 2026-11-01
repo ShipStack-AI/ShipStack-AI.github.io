@@ -1,25 +1,17 @@
 <ol class="steps">
 <li>
 
-### Start a Hono app
+### Start a Hono app and add two parts
 
 ```sh
 pnpm create hono@latest my-api   # pick the nodejs template
+pnpm add @shipstack-ai/rate-limit @shipstack-ai/auth @node-rs/argon2
 ```
 
 </li>
 <li>
 
-### Add the part
-
-```sh
-pnpm add @shipstack-ai/rate-limit
-```
-
-</li>
-<li>
-
-### Wire it in as middleware
+### Rate-limit the API
 
 ```ts
 import { createRateLimiter, rateLimitHeaders, slidingWindow } from '@shipstack-ai/rate-limit';
@@ -38,11 +30,40 @@ app.use('/api/*', async (c, next) => {
 </li>
 <li>
 
-### Hit it twelve times
+### Add sign-in and a protected route
 
-```sh
-for i in $(seq 12); do curl -s -o /dev/null -w "%{http_code} " localhost:3000/api/hello; done
-# 200 200 200 200 200 200 200 200 200 200 429 429
+```ts
+import { createAuth } from '@shipstack-ai/auth';
+import { argon2Hasher } from '@shipstack-ai/auth/argon2';
+import { memoryStore as authMemoryStore } from '@shipstack-ai/auth/memory';
+
+const auth = createAuth({
+  store: authMemoryStore(),
+  hasher: argon2Hasher(),
+  rateLimiter: limiter, // the same part guards sign-in and password reset
+  requireEmailVerification: false, // until sendEmail is wired to notifications
+});
+
+app.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
+app.get('/api/me', async (c) => {
+  const session = await auth.getSession(c.req.raw);
+  return session ? c.json(session.user) : c.text('Unauthorized', 401);
+});
+```
+
+</li>
+<li>
+
+### Prove it
+
+```ts
+const creds = JSON.stringify({ email: 'ann@example.com', password: 'correct horse battery staple' });
+const json = { 'content-type': 'application/json' };
+await app.request('/auth/sign-up', { method: 'POST', body: creds, headers: json }); // 202
+const res = await app.request('/auth/sign-in', { method: 'POST', body: creds, headers: json });
+const cookie = res.headers.get('set-cookie')!.split(';')[0];
+(await app.request('/api/me')).status; // 401
+(await app.request('/api/me', { headers: { cookie } })).status; // 200
 ```
 
 </li>

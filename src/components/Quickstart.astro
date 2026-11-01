@@ -1,22 +1,25 @@
 ---
 import Content from '../content/quickstart.mdx';
+import { modules, shortRef } from '../data/modules';
 import SectionHead from './SectionHead.astro';
+
+const used = modules.filter((m) => m.slug === 'auth' || m.slug === 'rate-limit');
 ---
 
 <section class="section" id="quickstart" aria-labelledby="quickstart-title">
   <div class="wrap qs">
-    <SectionHead no="04" kicker="Quickstart" title="Four steps from an empty Hono app to a throttled API." id="quickstart-title">
-      About fifteen lines. Behind a proxy, key on a header your proxy sets and clients cannot spoof. For more than one
-      instance, swap in the Redis store.
+    <SectionHead no="04" kicker="Quickstart" title="From empty Hono app to a guarded, throttled API." id="quickstart-title">
+      Four steps, about thirty lines, two parts. Swap either memory store for Postgres or Redis later without touching the
+      routes. Behind a proxy, key the limiter on a header your proxy sets and clients cannot spoof.
     </SectionHead>
     <div class="prose">
       <Content />
     </div>
-    <aside class="qs__next">
-      <span class="label label--ink">Next on the line</span>
+    <aside class="qs__note">
+      <span class="label label--ink">Checked, not assumed</span>
       <p>
-        Step five, protecting the route with a session, arrives with <code>@shipstack-ai/auth</code> v0.1. It takes this
-        same limiter as its <code>rateLimiter</code> option. Until then, it is not on this page.
+        These exact steps were run against {used.map((m, i) => (<>{i > 0 && ' and '}<code>{m.name}@{shortRef(m)}</code></>))}
+        with Hono's <code>app.request()</code>. Not on npm yet: until the first publish, install from the GitHub repos.
       </p>
     </aside>
   </div>
@@ -25,8 +28,8 @@ import SectionHead from './SectionHead.astro';
 <style>
   .prose :global(.steps) {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s3);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s4);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -41,14 +44,8 @@ import SectionHead from './SectionHead.astro';
     padding-top: var(--s2);
     border-top: 2px solid var(--ink);
   }
-  .prose :global(.steps > li:nth-child(3)) {
-    grid-column: 1 / -1;
-  }
-  .prose :global(.steps > li:nth-child(3)) {
-    order: 3;
-  }
-  .prose :global(.steps > li:nth-child(4)) {
-    order: 4;
+  .prose :global(.steps > li:first-child),
+  .prose :global(.steps > li:last-child) {
     grid-column: 1 / -1;
   }
   .prose :global(h3) {
@@ -66,9 +63,10 @@ import SectionHead from './SectionHead.astro';
     color: var(--signal-ink);
   }
   .prose :global(pre) {
+    flex: 1;
     border: 1px solid var(--line-strong);
   }
-  .qs__next {
+  .qs__note {
     display: grid;
     gap: var(--s1);
     max-width: 720px;
@@ -76,10 +74,10 @@ import SectionHead from './SectionHead.astro';
     padding: var(--s3);
     border: 1.5px dashed var(--ink-3);
   }
-  .qs__next p {
+  .qs__note p {
     color: var(--ink-2);
   }
-  @media (max-width: 760px) {
+  @media (max-width: 1080px) {
     .prose :global(.steps) {
       grid-template-columns: minmax(0, 1fr);
     }

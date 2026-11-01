@@ -21,7 +21,9 @@ const links = [
       <div>
         <p class="foot__mark">Parts, not platforms<span>.</span></p>
         <p class="foot__sub">
-          {cap(say(modules.length))} small MIT packages with one shape. {cap(say(built))} built, {say(modules.length - built)} on the bench.
+          {built === modules.length
+            ? `${cap(say(modules.length))} small MIT packages with one shape, all at v0.1. Not on npm yet.`
+            : `${cap(say(modules.length))} small MIT packages with one shape. ${cap(say(built))} built, ${say(modules.length - built)} on the bench.`}
         </p>
       </div>
       <ul class="foot__links" role="list">

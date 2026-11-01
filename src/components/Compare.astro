@@ -13,6 +13,10 @@ const rows: { k: string; v: [string, string, string]; win?: 0 | 1 | 2 }[] = [
     v: ['MIT', 'Commercial license per buyer', 'Proprietary service (some are open source and self-hostable)'],
   },
   {
+    k: 'Hosting',
+    v: ['None. Libraries that run inside your app; there is no ShipStack service.', 'Your app, on your hosting', 'They run it for you'],
+  },
+  {
     k: 'Cost',
     v: ['Free. You run the infrastructure.', 'One-time purchase', 'Subscription or usage-based, usually with a free tier'],
   },
@@ -27,12 +31,18 @@ const rows: { k: string; v: [string, string, string]; win?: 0 | 1 | 2 }[] = [
   },
   {
     k: 'Scope today',
-    v: [`${modules.length} parts planned, ${built} built. Backend only, no UI.`, 'A whole app on day one: UI, auth, billing, landing page', 'Deep and polished in one domain, with dashboards and support'],
+    v: [
+      built === modules.length
+        ? `${modules.length} small backend parts at v0.1. No UI. Auth is email and password only: no OAuth, passkeys, MFA or organizations.`
+        : `${modules.length} parts planned, ${built} built. Backend only, no UI.`,
+      'A whole app on day one: UI, auth, billing, landing page',
+      'Deep and polished in one domain: social login, SSO, dashboards, support',
+    ],
     win: 1,
   },
   {
     k: 'Maturity',
-    v: ['v0.x, no independent security audit yet', 'Varies by kit', 'Years in production, teams on call'],
+    v: ['v0.x, no independent security audit yet', 'Varies by kit', 'Mature products with dedicated teams'],
     win: 2,
   },
 ];
@@ -41,9 +51,9 @@ const rows: { k: string; v: [string, string, string]; win?: 0 | 1 | 2 }[] = [
 <section class="section" id="compare" aria-labelledby="compare-title">
   <div class="wrap">
     <SectionHead no="05" kicker="Honest comparison" title="Where we win, and where we clearly don't." id="compare-title">
-      We lose on breadth and maturity, by a lot. If you want a complete app today, buy a starter kit. If you want SSO,
-      dashboards and someone else on call, use a hosted service such as Clerk, Knock or Trigger.dev. ShipStack is for the
-      code you would rather own.
+      We lose on breadth and maturity, by a lot. Auth is deliberately small and is not a Clerk or Better Auth replacement.
+      If you want a complete app today, buy a starter kit. If you want SSO, dashboards and someone else on call, use a
+      hosted service such as Clerk, Knock or Trigger.dev. ShipStack is for the code you would rather own.
     </SectionHead>
 
     <div class="cmp">

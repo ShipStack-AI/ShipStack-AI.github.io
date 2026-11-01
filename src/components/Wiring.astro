@@ -14,6 +14,7 @@ const pos: Record<string, [number, number]> = {
   webhooks: [580, 480],
   'file-storage': [960, 312],
 };
+const anyWip = modules.some((m) => m.status !== 'built');
 const chips = modules.map((m) => ({ m, x: pos[m.slug]![0], y: pos[m.slug]![1] }));
 
 // Integrations from the phase-0 contract (section 4). Each wire is a structural type, not a package dependency.
@@ -34,7 +35,7 @@ const wires = [
     </SectionHead>
 
     <div class="wiring crop">
-      <div class="wiring__scroll" tabindex="0" aria-label="Wiring diagram, scrolls horizontally on small screens">
+      <div class="wiring__scroll">
         <svg class="wiring__svg" viewBox="0 0 1200 600" role="img" aria-labelledby="wd-title wd-desc">
           <title id="wd-title">Schematic of how ShipStack parts connect</title>
           <desc id="wd-desc">
@@ -83,21 +84,63 @@ const wires = [
           <text class="aside" x="1060" y="456" text-anchor="middle">no wires needed</text>
 
           <g class="legend" transform="translate(960 40)">
-            <rect class="legend__box" x="0" y="0" width="200" height="200" />
+            <rect class="legend__box" x="0" y="0" width="200" height={anyWip ? 200 : 160} />
             <text class="legend__title" x="16" y="28">LEGEND</text>
             <line class="wire__path legend__wire" x1="16" y1="56" x2="64" y2="56" />
             <text class="legend__text" x="76" y="60">structural type</text>
             <rect class="chip-g__body legend__solid" x="16" y="80" width="48" height="24" />
-            <text class="legend__text" x="76" y="96">built</text>
-            <rect class="chip-g__body legend__dash" x="16" y="120" width="48" height="24" />
-            <text class="legend__text" x="76" y="136">in progress</text>
-            <rect class="chip-g__evt" x="30" y="168" width="20" height="8" />
-            <text class="legend__text" x="76" y="176">EVT: onEvent</text>
+            <text class="legend__text" x="76" y="96">part, v0.1 built</text>
+            <rect class="chip-g__evt" x="30" y="128" width="20" height="8" />
+            <text class="legend__text" x="76" y="136">EVT: onEvent</text>
+            {
+              anyWip && (
+                <>
+                  <rect class="chip-g__body legend__dash" x="16" y="160" width="48" height="24" />
+                  <text class="legend__text" x="76" y="176">in progress</text>
+                </>
+              )
+            }
           </g>
         </svg>
       </div>
-      <p class="wiring__hint label">Scroll the drawing sideways →</p>
     </div>
+
+    <!-- Small screens: the same nets drawn as straight runs, one per row, readable without scrolling. -->
+    <ol class="nets" role="list" aria-label="Wiring, one connection per row">
+      {
+        wires.map((w, i) => (
+          <li class="net">
+            <span class="net__id mono">N{String(i + 1).padStart(2, '0')}</span>
+            <div class="net__run">
+              <span class="net__chip">{w.from}</span>
+              <span class="net__wire">
+                <span class="net__sig">{w.signal}</span>
+              </span>
+              <span class="net__chip">{w.to}</span>
+            </div>
+            <p class="net__carries">{w.carries}</p>
+          </li>
+        ))
+      }
+      <li class="net">
+        <span class="net__id mono">EVT</span>
+        <div class="net__run">
+          <span class="net__chip">every part</span>
+          <span class="net__wire net__wire--evt">
+            <span class="net__sig">ShipStackEvent</span>
+          </span>
+          <span class="net__chip">your app</span>
+        </div>
+        <p class="net__carries">each state-changing command calls onEvent: pipe it to an audit table, logs or analytics</p>
+      </li>
+      <li class="net net--solo">
+        <span class="net__id mono">—</span>
+        <div class="net__run">
+          <span class="net__chip">file-storage</span>
+          <span class="net__carries">standalone, no wires needed</span>
+        </div>
+      </li>
+    </ol>
 
     <div class="netlist">
       <table>
@@ -175,9 +218,83 @@ const wires = [
     height: auto;
     font-family: var(--font-mono);
   }
-  .wiring__hint {
+  .nets {
     display: none;
-    margin-top: var(--s1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+  }
+  .net {
+    display: grid;
+    gap: var(--s1);
+    padding: var(--s2) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .net__id {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ink-3);
+  }
+  .net__run {
+    display: flex;
+    align-items: center;
+  }
+  .net__chip {
+    flex: none;
+    padding: 6px 10px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: -0.02em;
+    box-shadow: inset 0 3px 0 var(--signal);
+  }
+  .net__wire {
+    position: relative;
+    flex: 1;
+    min-width: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 2.5px;
+    background: var(--signal);
+  }
+  .net__wire::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    border: 5px solid transparent;
+    border-left: 7px solid var(--signal);
+    border-right: 0;
+  }
+  .net__wire--evt {
+    background: var(--blue);
+  }
+  .net__wire--evt::after {
+    border-left-color: var(--blue);
+  }
+  .net__sig {
+    padding: 2px 6px;
+    border: 1px solid var(--signal);
+    background: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .net__wire--evt .net__sig {
+    border-color: var(--blue);
+  }
+  .net__carries {
+    font-size: 0.875rem;
+    color: var(--ink-2);
+  }
+  .net--solo .net__carries {
+    margin-left: var(--s2);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-3);
   }
 
   .wire__path {
@@ -313,7 +430,14 @@ const wires = [
     font-weight: 600;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 860px) {
+    .wiring,
+    .netlist {
+      display: none;
+    }
+    .nets {
+      display: block;
+    }
     table,
     tbody,
     tr {
@@ -353,8 +477,6 @@ const wires = [
     .wiring {
       padding: var(--s2);
     }
-    .wiring__hint {
-      display: block;
-    }
+
   }
 </style>

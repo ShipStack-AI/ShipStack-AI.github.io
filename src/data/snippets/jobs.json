@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/jobs",
   "repo": "ShipStack-AI/jobs",
   "path": "examples/basic.ts",
-  "ref": "33b4a76cc7207a7245bca9677a6724751e72f5de",
+  "ref": "155b90eae0ac35b5d84721948ec632c80214e92d",
   "imports": {
     "../src/index.js": "@shipstack-ai/jobs",
     "../src/adapters/memory.js": "@shipstack-ai/jobs/memory",

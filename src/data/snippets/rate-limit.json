@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/rate-limit",
   "repo": "ShipStack-AI/rate-limit",
   "path": "examples/basic.ts",
-  "ref": "b307d62e823b610067571ddd8ed980e95b5b951a",
+  "ref": "d3e47bc71f4da3e985aa3f6f87f3cb57225f4e3e",
   "imports": {
     "../src/index.js": "@shipstack-ai/rate-limit",
     "../src/stores/memory.js": "@shipstack-ai/rate-limit/memory",

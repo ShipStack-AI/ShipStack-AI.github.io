@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/webhooks",
   "repo": "ShipStack-AI/webhooks",
   "path": "examples/basic.ts",
-  "ref": "3ed810d8a531b935d7021e35f4af3fa308c95f9c",
+  "ref": "0e5fbe011f48f218ddf77b8b8d4ebd1f1465ce6b",
   "imports": {
     "../src/index.js": "@shipstack-ai/webhooks",
     "../src/stores/memory.js": "@shipstack-ai/webhooks/memory",

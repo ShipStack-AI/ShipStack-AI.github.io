@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/notifications",
   "repo": "ShipStack-AI/Notification-Service",
   "path": "examples/basic.ts",
-  "ref": "6d654aee6121245a0175bfe271f02b1833dde330",
+  "ref": "96db2a695d5257410fe2d91f3ba6b7a34bd7d9a3",
   "imports": {
     "../src/index.js": "@shipstack-ai/notifications",
     "../src/adapters/memory.js": "@shipstack-ai/notifications/memory",

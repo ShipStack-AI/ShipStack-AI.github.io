@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/billing",
   "repo": "ShipStack-AI/billing",
   "path": "examples/basic.ts",
-  "ref": "83ef0da1757c9ff774859862949255060d90a5a2",
+  "ref": "bf4314c41d60c2b4bb7665fa648c57b3aa8a61b3",
   "imports": {
     "../src/index.js": "@shipstack-ai/billing",
     "../src/stores/memory.js": "@shipstack-ai/billing/memory",

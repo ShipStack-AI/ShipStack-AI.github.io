@@ -66,6 +66,7 @@ export const modules: Module[] = [
     deferred: ['OAuth / social login (v0.2)', 'magic links', 'passkeys', 'MFA / TOTP', 'organizations', 'JWTs'],
     snapshot: auth,
     excerpt: [1, 13],
+    note: 'Ships as 0.1.0-beta: internally security-reviewed, not independently audited.',
   },
   {
     slug: 'rbac',

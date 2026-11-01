@@ -3,7 +3,7 @@
   "package": "@shipstack-ai/rbac",
   "repo": "ShipStack-AI/rbac",
   "path": "examples/basic.ts",
-  "ref": "6617ebe41e6fb4d356bd22284f79730313741714",
+  "ref": "5594a56df21919002bd472aea56babc83dfa9339",
   "imports": {
     "../src/index.js": "@shipstack-ai/rbac",
     "../src/stores/memory.js": "@shipstack-ai/rbac/memory",

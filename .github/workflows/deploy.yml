@@ -28,10 +28,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
         env:
-          # Unset: https://shipstack-ai.github.io/website/. For a custom domain, set the
-          # repository variable SITE_URL (Settings > Secrets and variables > Actions > Variables).
+          # The base path follows the repository name exactly (Pages URLs are case-sensitive),
+          # e.g. https://shipstack-ai.github.io/Website/. For a custom domain, set the repository
+          # variable SITE_URL (Settings > Secrets and variables > Actions > Variables): the base
+          # path then becomes "/". BASE_PATH overrides both.
           SITE_URL: ${{ vars.SITE_URL }}
-          BASE_PATH: ${{ vars.BASE_PATH }}
+          BASE_PATH: ${{ vars.BASE_PATH || (vars.SITE_URL && '/' || format('/{0}', github.event.repository.name)) }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

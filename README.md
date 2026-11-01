@@ -9,7 +9,7 @@ It is a single long landing page plus one datasheet page per module (`/modules/<
 - [Astro 5](https://astro.build) static output, MDX for long-form content, Shiki for highlighting (two custom themes in `src/data/shiki-themes.mjs`).
 - Hand-written CSS with custom properties. No Tailwind, no UI framework.
 - Fonts (Space Grotesk, JetBrains Mono) are self-hosted from `@fontsource-variable`, latin subset only. The site makes no third-party requests and sets no cookies.
-- About 2 KB of inline JS: theme toggle, tab switcher, copy buttons and the wiring diagram draw-in. Everything works without JS.
+- About 2.5 KB of inline JS: theme toggle, tab switcher, copy buttons, closing the mobile menu and the wiring diagram draw-in. Everything works without JS (the mobile menu is a native `<details>`).
 
 ## Develop
 
@@ -21,28 +21,39 @@ pnpm dev            # http://localhost:4321/website/
 pnpm check          # astro check (TypeScript + .astro diagnostics)
 pnpm build          # static site in dist/
 pnpm screenshots    # after build: full-page PNGs, 1440 and 390 wide, light and dark (needs Playwright)
+pnpm sync:snippets  # re-pull every module's examples/basic.ts and re-pin it (see below)
+pnpm gen:images     # re-render the OG image and icons (needs Playwright)
 ```
 
 ## Content and honesty
 
-Everything the site says about modules comes from one file: **`src/data/modules.ts`**. Each module has a `status` (`built` or `in-progress`) and a `published` flag (npm). Nothing is on npm yet, so no card links to npm.
+Everything the site says about modules comes from **`src/data/modules.ts`**: status (`built` / `in-progress`), the `published` flag for npm, spec rows and the deferred list (taken from each module's README), and the card excerpt range. All eight parts are at v0.1 and none is on npm yet, so no page links to npm and the hero says "Not on npm yet". Hero counts, section titles, the comparison table and the footer are derived from the same data.
 
-Code snippets:
+### Snippets
 
-- **Built modules** show their real `examples/basic.ts`. The file is vendored in `src/data/snippets/<module>.basic.ts.txt` at the commit pinned in `src/data/snippet-sources.json`, and relative imports (`../src/index.js`) are rewritten to package paths at build time. The build never fetches anything.
-- **Modules not yet pushed** show a placeholder from `modules.ts`, labelled as a placeholder in the code itself and on the page. It sketches the planned v0.1 API from the design contract.
+Every card and datasheet shows the module's real `examples/basic.ts`, pinned to a commit:
 
-To ship a module on the site:
+- `src/data/snippet-sources.json` lists where each example comes from.
+- `src/data/snippets/<module>.json` holds the code, the commit SHA it was read at, and an import map built from that commit's `package.json` `exports`, so `'../src/stores/memory.js'` renders as `'@shipstack-ai/auth/memory'`.
+- The build never fetches anything.
 
-1. Add it to `src/data/snippet-sources.json` with the commit to pin.
-2. Run `pnpm sync:snippets` (from GitHub raw; set `GITHUB_TOKEN` while the repos are private) or `pnpm sync:snippets -- --local ..` (from sibling clones).
-3. In `modules.ts`, set `status: 'built'` and change `snippet` to `{ kind: 'source', ... }`. Set `published: true` once it is on npm.
+Refresh them (and re-pin) with:
 
-Counts in the hero, the section titles, the comparison table and the footer all come from that data, so they update on their own.
+```sh
+pnpm sync:snippets                          # shallow-clones each repo's default branch with your git credentials
+pnpm sync:snippets -- --local /path/to/dir  # reads committed HEAD of sibling clones instead
+pnpm sync:snippets -- --only auth,webhooks  # just some modules
+```
 
-The quickstart middleware (`src/content/quickstart.mdx`) was checked against the real `@shipstack-ai/rate-limit` build with Hono's `app.request()`: requests 1 to 10 returned 200 and requests 11 and 12 returned 429 with `Retry-After`.
+Then review the diff: if an example changed length, adjust its `excerpt` range in `modules.ts`.
 
-Rules for copy: no invented users, testimonials, benchmarks, logos or prices. The comparison table compares categories and says where we lose.
+### Verified code
+
+The quickstart (`src/content/quickstart.mdx`) was run as written against the auth and rate-limit commits named on the page, with Hono's `app.request()`: anonymous `/api/me` returns 401, sign-up 202, and `/api/me` with the session cookie 200. The "One shape" constructors were type-checked and run against the jobs, file-storage and rbac commits. Rules for copy: no invented users, testimonials, benchmarks, logos or prices; the comparison table compares categories and says where we lose.
+
+### Images
+
+`public/og.png` (1200x630), `apple-touch-icon.png`, `icon-192.png`, `icon-512.png` and `favicon-32.png` are rendered from HTML by `pnpm gen:images` (Playwright) and committed. `favicon.svg` follows the OS color scheme.
 
 ## Design system
 
@@ -54,11 +65,22 @@ Rules for copy: no invented users, testimonials, benchmarks, logos or prices. Th
 | `--signal-ink` | `#A8380C` | `#FF9466`        | orange text (meets 4.5:1 on paper)         |
 | `--blue`   | `#2B4C7E`     | `#6FD3FF`        | hairlines (30%), dimension lines, the grid |
 
+On screens up to 860px the wiring diagram becomes one straight run per connection, readable without scrolling, and code wraps below 560px. Wider code blocks scroll with a soft edge showing hidden content.
+
 Spacing is an 8px scale (`--s1` = 8px to `--s16` = 128px) and the page background is a visible 8px/64px grid. Motion is limited to cards lifting 4px on hover and the wiring diagram drawing in once on scroll; both are off under `prefers-reduced-motion`. The theme follows the OS and can be toggled; the choice is kept in `localStorage`.
 
-## Deploy
+## Deploy and base path
 
-`.github/workflows/deploy.yml` builds and deploys to GitHub Pages on every push to `main`. In the repo settings, set Pages source to **GitHub Actions**. The default URL is `https://shipstack-ai.github.io/website/`. For a custom domain, set `SITE_URL` and `BASE_PATH=/` in the workflow and add the domain in the Pages settings.
+`.github/workflows/deploy.yml` builds and deploys to GitHub Pages on every push to `main`. In the repo settings, set Pages source to **GitHub Actions**.
+
+The serving location is one setting:
+
+| Repository variable | Unset (default)                              | Custom domain                     |
+| ------------------- | -------------------------------------------- | --------------------------------- |
+| `SITE_URL`          | `https://shipstack-ai.github.io` at `/website/` | `https://<domain>`, served at `/` |
+| `BASE_PATH`         | derived                                      | optional override                 |
+
+Set `SITE_URL` under Settings > Secrets and variables > Actions > Variables and add the domain in the Pages settings. Locally: `SITE_URL=https://example.dev pnpm build`. There is a styled `404.html` for Pages.
 
 `.github/workflows/ci.yml` runs `astro check` and the build on every PR, and Lighthouse CI (`lighthouserc.json`) with a 95 minimum on performance, accessibility, best practices and SEO.
 
@@ -66,13 +88,13 @@ Spacing is an 8px scale (`--s1` = 8px to `--s16` = 128px) and the page backgroun
 
 ```
 src/
-  components/   Hero, PartsBin, OneShape, Wiring, Quickstart, Compare, Principles, Header, Footer, CodeBlock
+  components/   Hero, PartsBin, OneShape, Wiring, Quickstart, Compare, Principles, Header, Footer, CodeBlock, SectionHead
   content/      quickstart.mdx
   data/         modules.ts (single source of truth), snippet-sources.json, snippets/, shiki-themes.mjs
   layouts/      Base.astro
-  pages/        index.astro, modules/[slug].astro
+  pages/        index.astro, modules/[slug].astro, 404.astro
   styles/       global.css (tokens, primitives)
-scripts/        sync-snippets.mjs, screenshots.mjs
+scripts/        sync-snippets.mjs, screenshots.mjs, gen-images.mjs
 ```
 
 ## License

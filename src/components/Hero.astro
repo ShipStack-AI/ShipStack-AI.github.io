@@ -3,11 +3,19 @@ import { GITHUB_ORG, modules } from '../data/modules';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const built = modules.filter((m) => m.status === 'built');
-const featured = built[0] ?? modules[0]!;
+// The one part that installs with no peers and works in three lines.
+const featured = modules.find((m) => m.slug === 'rate-limit') ?? modules[0]!;
 const install = `pnpm add ${featured.pkg}`;
+// From the phase-0 contract: types each part consumes, duplicated on purpose instead of a shared package.
+const pins: [string, string][] = [
+  ['Principal', 'auth → rbac'],
+  ['RateLimiterLike', 'rate-limit → auth'],
+  ['QueueLike', 'jobs → notifications, webhooks'],
+  ['EventSink', 'every part → your app'],
+];
 const rows: [string, string][] = [
   ['Parts in catalog', `${modules.length}`],
-  ['Built', `${built.length} (${built.map((m) => m.name).join(', ')})`],
+  ['Built', `${built.length} of ${modules.length}`],
   ['In progress', `${modules.length - built.length}`],
   ['License', 'MIT'],
   ['Language', 'TypeScript, ESM only'],
@@ -74,7 +82,13 @@ const rows: [string, string][] = [
             ))
           }
         </ol>
-        <p class="binmap__key label"><span class="key key--built"></span>built <span class="key key--wip"></span>in progress</p>
+        {
+          built.length < modules.length && (
+            <p class="binmap__key label">
+              <span class="key key--built" />built <span class="key key--wip" />in progress
+            </p>
+          )
+        }
       </nav>
       <dl class="plate__rows">
         {
@@ -86,6 +100,19 @@ const rows: [string, string][] = [
           ))
         }
       </dl>
+      <div class="pinout">
+        <span class="label label--ink">Pinout · shared structural types</span>
+        <dl>
+          {
+            pins.map(([t, who]) => (
+              <div>
+                <dt>{t}</dt>
+                <dd>{who}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
       <div class="plate__shape">
         <span class="label">Every part</span>
         <code>create&lt;Part&gt;(&#123; adapter &#125;)</code>
@@ -208,7 +235,7 @@ const rows: [string, string][] = [
     display: flex;
     flex-direction: column;
     gap: var(--s2);
-    align-self: end;
+    align-self: stretch;
     padding: var(--s3);
     background-color: var(--paper);
     border: 1px solid var(--line-strong);
@@ -249,11 +276,18 @@ const rows: [string, string][] = [
     box-shadow: 0 2px 0 var(--shadow);
   }
   .binmap__cell--built {
-    border: 1px solid var(--signal);
-    background: var(--signal);
-    color: var(--on-signal);
+    border: 1px solid var(--ink);
+    color: var(--ink);
+  }
+  .binmap__cell--built .binmap__no {
+    color: var(--signal-ink);
   }
   .binmap__cell--built:hover {
+    background: var(--signal);
+    border-color: var(--signal);
+    color: var(--on-signal);
+  }
+  .binmap__cell--built:hover .binmap__no {
     color: var(--on-signal);
   }
   .binmap__no {
@@ -280,7 +314,7 @@ const rows: [string, string][] = [
     height: 10px;
   }
   .key--built {
-    background: var(--signal);
+    border: 1px solid var(--ink);
   }
   .key--wip {
     margin-left: var(--s1);
@@ -301,7 +335,38 @@ const rows: [string, string][] = [
     font-weight: 600;
     text-align: right;
   }
+  .pinout {
+    display: grid;
+    gap: var(--s1);
+    padding-top: var(--s2);
+  }
+  .pinout dl {
+    margin: 0;
+    border: 1px solid var(--line-strong);
+  }
+  .pinout div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s2);
+    padding: 7px 10px;
+    border-bottom: 1px dashed var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+  .pinout div:last-child {
+    border-bottom: 0;
+  }
+  .pinout dt {
+    font-weight: 700;
+    color: var(--signal-ink);
+  }
+  .pinout dd {
+    margin: 0;
+    color: var(--ink-2);
+    text-align: right;
+  }
   .plate__shape {
+    margin-top: auto;
     display: grid;
     gap: 6px;
     padding: var(--s2) 0;

@@ -1,0 +1,16 @@
+{
+  "module": "billing",
+  "package": "@shipstack-ai/billing",
+  "repo": "ShipStack-AI/billing",
+  "path": "examples/basic.ts",
+  "ref": "83ef0da1757c9ff774859862949255060d90a5a2",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/billing",
+    "../src/stores/memory.js": "@shipstack-ai/billing/memory",
+    "../src/stores/postgres.js": "@shipstack-ai/billing/postgres",
+    "../src/providers/stripe.js": "@shipstack-ai/billing/stripe",
+    "../src/providers/fake.js": "@shipstack-ai/billing/fake",
+    "../src/testing/contract.js": "@shipstack-ai/billing/testing"
+  },
+  "code": "import { createBilling, definePlans } from '../src/index.js';\nimport { fakeProvider } from '../src/providers/fake.js';\nimport { memoryStore } from '../src/stores/memory.js';\n\nconst plans = definePlans({\n  free: { features: { seats: 1 } },\n  pro: { stripePriceId: 'price_pro', features: { seats: 5, api: true } },\n});\nconst billing = createBilling({\n  plans,\n  provider: fakeProvider(),\n  store: memoryStore(),\n  defaultPlan: 'free',\n});\n\nconst urls = { successUrl: 'https://app.test/ok', cancelUrl: 'https://app.test/no' };\nconsole.log((await billing.createCheckoutSession('user_1', { planId: 'pro', ...urls })).url);\nconsole.log(await billing.getEntitlements('user_1')); // free plan until the webhook says otherwise\n"
+}

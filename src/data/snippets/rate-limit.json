@@ -1,0 +1,14 @@
+{
+  "module": "rate-limit",
+  "package": "@shipstack-ai/rate-limit",
+  "repo": "ShipStack-AI/rate-limit",
+  "path": "examples/basic.ts",
+  "ref": "b307d62e823b610067571ddd8ed980e95b5b951a",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/rate-limit",
+    "../src/stores/memory.js": "@shipstack-ai/rate-limit/memory",
+    "../src/stores/redis.js": "@shipstack-ai/rate-limit/redis",
+    "../src/testing/contract.js": "@shipstack-ai/rate-limit/testing"
+  },
+  "code": "import { createRateLimiter, rateLimitHeaders, slidingWindow, tokenBucket } from '../src/index.js';\nimport { memoryStore } from '../src/stores/memory.js';\n\n// Swap memoryStore() for redisStore({ client: new Redis(process.env.REDIS_URL) }) in production.\nconst limiter = createRateLimiter({\n  store: memoryStore(),\n  algorithm: slidingWindow(3, '10s'),\n  onEvent: (e) => console.log('event:', e.type, e.subject?.id),\n});\n\nfor (let i = 1; i <= 5; i++) {\n  const result = await limiter.limit('user:42');\n  const headers = rateLimitHeaders(result);\n  console.log(\n    `request ${i}: ${result.success ? 'allowed' : 'blocked'}`,\n    `remaining=${result.remaining}`,\n    `retry-after=${headers.get('Retry-After') ?? '-'}`,\n  );\n}\n\nawait limiter.reset('user:42');\nconsole.log('after reset:', (await limiter.limit('user:42')).success ? 'allowed' : 'blocked');\n\n// A token bucket allows bursts, then refills steadily.\nconst bucket = createRateLimiter({ store: memoryStore(), algorithm: tokenBucket(5, 1) });\nconst burst = await Promise.all(Array.from({ length: 7 }, () => bucket.limit('api-key:abc')));\nconsole.log('burst of 7:', burst.map((r) => (r.success ? 'ok' : 'blocked')).join(' '));\n"
+}

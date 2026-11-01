@@ -1,0 +1,14 @@
+{
+  "module": "rbac",
+  "package": "@shipstack-ai/rbac",
+  "repo": "ShipStack-AI/rbac",
+  "path": "examples/basic.ts",
+  "ref": "6617ebe41e6fb4d356bd22284f79730313741714",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/rbac",
+    "../src/stores/memory.js": "@shipstack-ai/rbac/memory",
+    "../src/stores/postgres.js": "@shipstack-ai/rbac/postgres",
+    "../src/testing/contract.js": "@shipstack-ai/rbac/testing"
+  },
+  "code": "import { createRbac, defineRoles } from '../src/index.js';\nimport { memoryStore } from '../src/stores/memory.js';\n\nconst roles = defineRoles({\n  viewer: ['invoice:read'],\n  admin: { inherits: ['viewer'], permissions: ['invoice:*', 'user:*'] },\n});\nconst rbac = createRbac({ roles, store: memoryStore() });\n\nawait rbac.assign('user_1', 'admin', { tenantId: 'acme' });\nconsole.log(await rbac.can({ id: 'user_1' }, 'user:delete', { tenantId: 'acme' })); // true\nconsole.log(await rbac.can({ id: 'user_1' }, 'user:delete', { tenantId: 'globex' })); // false\n"
+}

@@ -1,11 +1,13 @@
 {
-  "$comment": "Modules whose examples/basic.ts is published. scripts/sync-snippets.mjs fetches each file at the pinned ref into src/data/snippets/<module>.basic.ts.txt. Add a module here when its repo is pushed, then flip its status in src/data/modules.ts.",
+  "$comment": "Where each module's examples/basic.ts comes from. `pnpm sync:snippets` writes src/data/snippets/<module>.json with the code, the commit it was read at, and the import map from that commit's package.json exports. `repo` is the name git clones from today (renamed repos redirect); `localDir` is the sibling clone used by --local.",
   "sources": [
-    {
-      "module": "rate-limit",
-      "repo": "ShipStack-AI/rate-limit",
-      "ref": "465883b8614b734e99ec4bb5862c0205ce6c0760",
-      "path": "examples/basic.ts"
-    }
+    { "module": "auth", "repo": "ShipStack-AI/Auth", "localDir": "Auth", "path": "examples/basic.ts" },
+    { "module": "rbac", "repo": "ShipStack-AI/rbac", "localDir": "rbac", "path": "examples/basic.ts" },
+    { "module": "rate-limit", "repo": "ShipStack-AI/rate-limit", "localDir": "rate-limit", "path": "examples/basic.ts" },
+    { "module": "notifications", "repo": "ShipStack-AI/Notification-Service", "localDir": "Notification-Service", "path": "examples/basic.ts" },
+    { "module": "jobs", "repo": "ShipStack-AI/jobs", "localDir": "jobs", "path": "examples/basic.ts" },
+    { "module": "file-storage", "repo": "ShipStack-AI/file-storage", "localDir": "file-storage", "path": "examples/basic.ts" },
+    { "module": "webhooks", "repo": "ShipStack-AI/webhooks", "localDir": "webhooks", "path": "examples/basic.ts" },
+    { "module": "billing", "repo": "ShipStack-AI/billing", "localDir": "billing", "path": "examples/basic.ts" }
   ]
 }

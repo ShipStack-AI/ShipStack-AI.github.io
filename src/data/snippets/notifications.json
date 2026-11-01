@@ -1,0 +1,14 @@
+{
+  "module": "notifications",
+  "package": "@shipstack-ai/notifications",
+  "repo": "ShipStack-AI/Notification-Service",
+  "path": "examples/basic.ts",
+  "ref": "6d654aee6121245a0175bfe271f02b1833dde330",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/notifications",
+    "../src/adapters/memory.js": "@shipstack-ai/notifications/memory",
+    "../src/adapters/smtp.js": "@shipstack-ai/notifications/smtp",
+    "../src/testing/contract.js": "@shipstack-ai/notifications/testing"
+  },
+  "code": "import { createNotifications, html, memoryEmailAdapter } from '../src/index.js';\n\nconst email = memoryEmailAdapter(); // production: smtpAdapter({ smtp: { host, auth } })\nconst n = createNotifications({\n  from: 'noreply@acme.dev',\n  adapters: { email },\n  templates: {\n    welcome: (d: { name: string }) => ({\n      subject: `Welcome, ${d.name}`,\n      html: String(html`<p>Hi ${d.name}</p>`), // escaped\n      text: `Hi ${d.name}`,\n    }),\n  },\n});\nawait n.notify({ to: 'ada@example.com', template: 'welcome', data: { name: 'Ada' } });\nconsole.log(email.sent[0]?.subject);\n"
+}

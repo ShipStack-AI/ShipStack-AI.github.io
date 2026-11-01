@@ -1,0 +1,14 @@
+{
+  "module": "jobs",
+  "package": "@shipstack-ai/jobs",
+  "repo": "ShipStack-AI/jobs",
+  "path": "examples/basic.ts",
+  "ref": "33b4a76cc7207a7245bca9677a6724751e72f5de",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/jobs",
+    "../src/adapters/memory.js": "@shipstack-ai/jobs/memory",
+    "../src/adapters/postgres.js": "@shipstack-ai/jobs/postgres",
+    "../src/testing/contract.js": "@shipstack-ai/jobs/testing"
+  },
+  "code": "import { memoryAdapter } from '../src/adapters/memory.js';\nimport { createJobs } from '../src/index.js';\n\nconst jobs = createJobs({ adapter: memoryAdapter() });\n\nawait jobs.worker<{ to: string }>('email.welcome', async ({ to }, ctx) => {\n  console.log(`sending welcome email to ${to} (attempt ${ctx.attempt}/${ctx.maxAttempts})`);\n});\nawait jobs.enqueue('email.welcome', { to: 'ada@example.com' }, { idempotencyKey: 'welcome:ada' });\nawait new Promise((r) => setTimeout(r, 50));\nawait jobs.stop();\n"
+}

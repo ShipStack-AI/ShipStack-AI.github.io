@@ -1,16 +1,34 @@
 // Single source of truth for the parts bin, the datasheet pages and every status label.
-// To ship a module: set `status: 'built'`, add it to snippet-sources.json, run
-// `pnpm sync:snippets`, and set `published: true` once it is on npm.
-import rateLimitBasic from './snippets/rate-limit.basic.ts.txt?raw';
+// Snippets come from src/data/snippets/<module>.json, written by `pnpm sync:snippets`
+// (the real examples/basic.ts of each repo, pinned to the commit it was read at).
+// Facts in `spec` and `deferred` are taken from each module's README at that commit.
+import auth from './snippets/auth.json';
+import billing from './snippets/billing.json';
+import fileStorage from './snippets/file-storage.json';
+import jobs from './snippets/jobs.json';
+import notifications from './snippets/notifications.json';
+import rateLimit from './snippets/rate-limit.json';
+import rbac from './snippets/rbac.json';
+import webhooks from './snippets/webhooks.json';
 
 export type Status = 'built' | 'in-progress';
+
+export interface Snapshot {
+  module: string;
+  package: string;
+  repo: string;
+  path: string;
+  ref: string;
+  imports: Record<string, string>;
+  code: string;
+}
 
 export interface Module {
   slug: string;
   part: string;
   name: string;
   pkg: string;
-  /** GitHub repo name under ShipStack-AI (current name; renames redirect). */
+  /** Final repo name under ShipStack-AI. Pending renames redirect on GitHub. */
   repo: string;
   purpose: string;
   referenceAdapter: string;
@@ -18,21 +36,14 @@ export interface Module {
   status: Status;
   /** True once `npm publish` has happened. Nothing is published yet. */
   published: boolean;
-  /** Spec rows shown on the datasheet. Only facts from the v0.1 scope. */
   spec: [string, string][];
   deferred: string[];
-  snippet: { kind: 'source'; code: string; excerpt: [number, number]; ref: string } | { kind: 'placeholder'; code: string };
+  snapshot: Snapshot;
+  /** 1-based inclusive line range of basic.ts shown on the card. */
+  excerpt: [number, number];
+  /** Optional note shown under the code, e.g. for demo-only helpers. */
+  note?: string;
 }
-
-/** Rewrites example-relative imports (`../src/stores/memory.js`) to the published subpaths. */
-function asPackageImports(code: string, pkg: string): string {
-  return code
-    .replace(/'\.\.\/src\/index\.js'/g, `'${pkg}'`)
-    .replace(/'\.\.\/src\/(?:stores|adapters)\/([\w-]+)\.js'/g, `'${pkg}/$1'`);
-}
-
-const PLACEHOLDER =
-  '// PLACEHOLDER: planned v0.1 API from the design contract.\n// Replaced by examples/basic.ts when this module ships.\n';
 
 export const modules: Module[] = [
   {
@@ -40,29 +51,21 @@ export const modules: Module[] = [
     part: 'SS-01',
     name: 'auth',
     pkg: '@shipstack-ai/auth',
-    repo: 'Auth',
-    purpose: 'Email and password sign-in with database sessions. Small, auditable, your tables.',
+    repo: 'auth',
+    purpose: 'Email and password, opaque database sessions, verification and reset. Deliberately small: not a Clerk or Better Auth replacement.',
     referenceAdapter: 'Postgres store',
-    adapters: ['memory', 'postgres'],
-    status: 'in-progress',
+    adapters: ['memory', 'postgres', 'argon2 hasher'],
+    status: 'built',
     published: false,
     spec: [
-      ['Passwords', 'argon2id (OWASP params)'],
-      ['Sessions', 'opaque 256-bit token, SHA-256 stored'],
-      ['Cookie', '__Host- prefixed'],
-      ['Handler', 'Fetch: (req) => Response'],
+      ['Passwords', 'argon2id, m=19456 t=2 p=1'],
+      ['Sessions', '7d idle, 30d absolute'],
+      ['Cookie', '__Host- prefixed, SameSite=Lax'],
+      ['Tokens', 'single use, 1h default'],
     ],
-    deferred: ['OAuth / social login', 'magic links', 'passkeys', 'MFA', 'organizations'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createAuth } from '@shipstack-ai/auth';
-import { postgresStore } from '@shipstack-ai/auth/postgres';
-
-const auth = createAuth({ store: postgresStore({ client: pool }), rateLimiter });
-
-export const handler = (req: Request) => auth.handler(req); // mount at /auth/*
-const session = await auth.getSession(req); // Session | null`,
-    },
+    deferred: ['OAuth / social login (v0.2)', 'magic links', 'passkeys', 'MFA / TOTP', 'organizations', 'JWTs'],
+    snapshot: auth,
+    excerpt: [1, 13],
   },
   {
     slug: 'rbac',
@@ -70,28 +73,20 @@ const session = await auth.getSession(req); // Session | null`,
     name: 'rbac',
     pkg: '@shipstack-ai/rbac',
     repo: 'rbac',
-    purpose: 'Roles and permissions defined in code, with inheritance, wildcards and tenants.',
+    purpose: 'Roles and permissions in code, assignments in your database. Inheritance, wildcards, tenants.',
     referenceAdapter: 'Postgres store',
     adapters: ['memory', 'postgres'],
-    status: 'in-progress',
+    status: 'built',
     published: false,
     spec: [
       ['Model', 'roles -> permissions, in code'],
-      ['Wildcards', 'resource:* and *'],
+      ['Matching', 'resource:* wildcards, inheritance'],
+      ['Default', 'deny; no deny rules'],
       ['Scope', 'tenant-scoped assignments'],
-      ['Errors', 'assert() throws rbac/forbidden (403)'],
     ],
-    deferred: ['ABAC / conditions', 'ownership rules', 'policy files', 'ReBAC'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createRbac, defineRoles } from '@shipstack-ai/rbac';
-
-const roles = defineRoles({ admin: ['*'], member: ['invoice:read', 'invoice:create'] });
-const rbac = createRbac({ roles });
-
-await rbac.can(session.user, 'invoice:read', { tenantId }); // boolean
-await rbac.assert(session.user, 'invoice:delete'); // throws rbac/forbidden`,
-    },
+    deferred: ['ABAC / conditions', 'ownership rules', 'deny rules', 'policy files', 'ReBAC'],
+    snapshot: rbac,
+    excerpt: [1, 12],
   },
   {
     slug: 'rate-limit',
@@ -99,7 +94,7 @@ await rbac.assert(session.user, 'invoice:delete'); // throws rbac/forbidden`,
     name: 'rate-limit',
     pkg: '@shipstack-ai/rate-limit',
     repo: 'rate-limit',
-    purpose: 'Sliding-window and token-bucket limits with standard RateLimit headers.',
+    purpose: 'Sliding-window and token-bucket limits with standard RateLimit headers. Fails closed.',
     referenceAdapter: 'Redis store (atomic Lua)',
     adapters: ['memory', 'redis'],
     status: 'built',
@@ -107,44 +102,33 @@ await rbac.assert(session.user, 'invoice:delete'); // throws rbac/forbidden`,
     spec: [
       ['Algorithms', 'slidingWindow, tokenBucket'],
       ['Headers', 'RateLimit-*, Retry-After'],
-      ['Runtime deps', '0'],
+      ['Store down', 'throws (fails closed)'],
       ['Peer (optional)', 'ioredis ^5 || ^6'],
     ],
-    deferred: ['fixed window', 'Postgres store', 'Upstash REST', 'multi-region'],
-    snippet: {
-      kind: 'source',
-      code: asPackageImports(rateLimitBasic, '@shipstack-ai/rate-limit'),
-      excerpt: [1, 9],
-      ref: '465883b',
-    },
+    deferred: ['fixed window', 'Postgres store', 'Upstash REST', 'multi-region', 'fail-open option'],
+    snapshot: rateLimit,
+    excerpt: [1, 9],
   },
   {
     slug: 'notifications',
     part: 'SS-04',
     name: 'notifications',
     pkg: '@shipstack-ai/notifications',
-    repo: 'Notification-Service',
-    purpose: 'Templated email as plain TypeScript functions, delivered inline or through a queue.',
+    repo: 'notifications',
+    purpose: 'Transactional email from plain TypeScript templates. Escaped, idempotent, inline or queued.',
     referenceAdapter: 'SMTP (nodemailer)',
-    adapters: ['console', 'smtp'],
-    status: 'in-progress',
+    adapters: ['memory', 'console', 'smtp'],
+    status: 'built',
     published: false,
     spec: [
-      ['Templates', 'TS functions -> { subject, html, text }'],
-      ['Channels', 'email'],
-      ['Idempotency', 'per-notification key'],
+      ['Templates', 'functions -> { subject, html, text }'],
+      ['Escaping', 'html`` tag escapes ${} values'],
+      ['Headers', 'injection refused'],
       ['Queue', 'optional QueueLike'],
     ],
-    deferred: ['SMS', 'push', 'in-app inbox', 'preferences', 'digests'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createNotifications } from '@shipstack-ai/notifications';
-import { smtpAdapter } from '@shipstack-ai/notifications/smtp';
-
-const notifications = createNotifications({ email: smtpAdapter({ url: SMTP_URL }), templates });
-
-await notifications.notify({ to: user.email, template: 'welcome', data: { name }, channels: ['email'] });`,
-    },
+    deferred: ['SMS', 'push', 'in-app inbox', 'preferences', 'digests', 'React Email'],
+    snapshot: notifications,
+    excerpt: [1, 15],
   },
   {
     slug: 'jobs',
@@ -152,28 +136,20 @@ await notifications.notify({ to: user.email, template: 'welcome', data: { name }
     name: 'jobs',
     pkg: '@shipstack-ai/jobs',
     repo: 'jobs',
-    purpose: 'Background jobs with retries, backoff and cron, on the Postgres you already run.',
+    purpose: 'Background jobs with retries, idempotency keys, delays and cron, on the Postgres you already run.',
     referenceAdapter: 'Postgres (pg-boss)',
-    adapters: ['memory', 'pg-boss'],
-    status: 'in-progress',
+    adapters: ['memory', 'postgres'],
+    status: 'built',
     published: false,
     spec: [
       ['Retries', 'exponential backoff + jitter'],
-      ['Scheduling', 'cron via schedule()'],
+      ['Scheduling', 'five-field cron, UTC'],
       ['Shutdown', 'graceful stop()'],
       ['Contract', 'satisfies QueueLike'],
     ],
-    deferred: ['BullMQ / Redis', 'dashboards', 'workflows', 'fan-out'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createJobs } from '@shipstack-ai/jobs';
-import { pgBossAdapter } from '@shipstack-ai/jobs/pg-boss';
-
-const jobs = createJobs({ adapter: pgBossAdapter({ connectionString: DATABASE_URL }) });
-
-jobs.worker('email.send', async (payload) => { /* ... */ }, { concurrency: 5 });
-await jobs.enqueue('email.send', { to }, { delayMs: 60_000, idempotencyKey });`,
-    },
+    deferred: ['BullMQ / Redis', 'dashboards', 'workflows', 'fan-out', 'priorities'],
+    snapshot: jobs,
+    excerpt: [1, 9],
   },
   {
     slug: 'file-storage',
@@ -181,28 +157,20 @@ await jobs.enqueue('email.send', { to }, { delayMs: 60_000, idempotencyKey });`,
     name: 'file-storage',
     pkg: '@shipstack-ai/file-storage',
     repo: 'file-storage',
-    purpose: 'Put, get, list and signed URLs over any S3-compatible bucket.',
-    referenceAdapter: 'S3-compatible (S3, R2, B2, MinIO)',
+    purpose: 'Put, get, list and signed URLs over S3, R2, B2 or MinIO, with strict key validation.',
+    referenceAdapter: 'S3-compatible',
     adapters: ['memory', 's3'],
-    status: 'in-progress',
+    status: 'built',
     published: false,
     spec: [
-      ['Streams', 'Web ReadableStream'],
-      ['Signed URLs', 'upload + download, 15 min default'],
-      ['Keys', 'rejects .., leading /, control chars'],
+      ['Targets', 'AWS S3, Cloudflare R2, Backblaze B2, MinIO'],
+      ['Signed URLs', 'upload + download'],
+      ['put()', 'buffered, 50 MiB default cap'],
       ['Peer (optional)', '@aws-sdk/client-s3'],
     ],
-    deferred: ['GCS', 'Azure Blob', 'multipart uploads', 'image transforms'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createFileStorage } from '@shipstack-ai/file-storage';
-import { s3Adapter } from '@shipstack-ai/file-storage/s3';
-
-const storage = createFileStorage({ adapter: s3Adapter({ bucket, region, endpoint, credentials }) });
-
-await storage.put('avatars/42.png', body, { contentType: 'image/png' });
-const url = await storage.signedDownloadUrl('avatars/42.png', { expiresIn: 900 });`,
-    },
+    deferred: ['Google Cloud Storage', 'Azure Blob', 'local filesystem', 'multipart uploads', 'image transforms'],
+    snapshot: fileStorage,
+    excerpt: [1, 10],
   },
   {
     slug: 'webhooks',
@@ -210,27 +178,21 @@ const url = await storage.signedDownloadUrl('avatars/42.png', { expiresIn: 900 }
     name: 'webhooks',
     pkg: '@shipstack-ai/webhooks',
     repo: 'webhooks',
-    purpose: 'Outbound delivery and inbound verification on the Standard Webhooks spec.',
+    purpose: 'Outbound webhooks on the Standard Webhooks spec, with retries, verify() and an SSRF guard.',
     referenceAdapter: 'Postgres store',
     adapters: ['memory', 'postgres'],
-    status: 'in-progress',
+    status: 'built',
     published: false,
     spec: [
-      ['Spec', 'Standard Webhooks (HMAC-SHA256)'],
+      ['Signing', 'Standard Webhooks, HMAC-SHA256'],
       ['Retries', '5 attempts, 5s -> 5h'],
-      ['SSRF guard', 'blocks private and loopback IPs'],
+      ['SSRF guard', 'pins the checked IP'],
       ['Timeout', '10s per attempt'],
     ],
-    deferred: ['customer portal UI', 'dual-secret rotation', 'replay UI'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createWebhooks } from '@shipstack-ai/webhooks';
-
-const webhooks = createWebhooks({ store, queue: jobs });
-
-await webhooks.createEndpoint({ url: 'https://example.com/hook', events: ['invoice.paid'] });
-await webhooks.send({ type: 'invoice.paid', data: { id: 'inv_123' } });`,
-    },
+    deferred: ['customer portal UI', 'dual-secret signing', 'auto-disable', 'replay UI', 'Svix adapter'],
+    snapshot: webhooks,
+    excerpt: [5, 15],
+    note: 'startReceiver() is a local demo helper from examples/receiver.ts.',
   },
   {
     slug: 'billing',
@@ -238,28 +200,20 @@ await webhooks.send({ type: 'invoice.paid', data: { id: 'inv_123' } });`,
     name: 'billing',
     pkg: '@shipstack-ai/billing',
     repo: 'billing',
-    purpose: 'Stripe checkout, portal and webhooks, normalized into plans and entitlements.',
+    purpose: 'Stripe subscriptions: plans in code, verified idempotent webhooks, entitlements from your database.',
     referenceAdapter: 'Stripe',
-    adapters: ['fake', 'stripe'],
-    status: 'in-progress',
+    adapters: ['fake', 'stripe', 'memory', 'postgres'],
+    status: 'built',
     published: false,
     spec: [
       ['Plans', 'defined in code'],
-      ['Webhooks', 'verified via Stripe SDK, idempotent'],
-      ['Model', 'normalized Subscription'],
-      ['Store', 'memory, Postgres'],
+      ['Webhooks', 'verified, idempotent by event id'],
+      ['Ordering', 'out-of-order safe'],
+      ['Peer (optional)', 'stripe ^22 || ^23'],
     ],
-    deferred: ['metered billing', 'Paddle / Lemon Squeezy / Polar', 'tax', 'coupons'],
-    snippet: {
-      kind: 'placeholder',
-      code: `${PLACEHOLDER}import { createBilling, definePlans } from '@shipstack-ai/billing';
-import { stripeProvider } from '@shipstack-ai/billing/stripe';
-
-const plans = definePlans({ pro: { stripePriceId: 'price_123', features: { seats: 5, api: true } } });
-const billing = createBilling({ provider: stripeProvider({ secretKey }), plans, store });
-
-const { features } = await billing.getEntitlements(customerRef);`,
-    },
+    deferred: ['metered billing', 'Paddle / Lemon Squeezy / Polar', 'tax', 'coupons', 'invoices UI'],
+    snapshot: billing,
+    excerpt: [5, 18],
   },
 ];
 
@@ -268,12 +222,25 @@ export const STATUS_LABEL: Record<Status, string> = {
   'in-progress': 'v0.1 in progress',
 };
 
+export const builtCount = modules.filter((m) => m.status === 'built').length;
+
 export const GITHUB_ORG = 'https://github.com/ShipStack-AI';
 export const repoUrl = (m: Module) => `${GITHUB_ORG}/${m.repo}`;
+export const commitUrl = (m: Module) => `${GITHUB_ORG}/${m.repo}/blob/${m.snapshot.ref}/${m.snapshot.path}`;
 export const npmUrl = (m: Module) => `https://www.npmjs.com/package/${m.pkg}`;
+export const shortRef = (m: Module) => m.snapshot.ref.slice(0, 7);
+
+/** The example with relative imports (`../src/stores/memory.js`) rewritten to published specifiers. */
+export function code(m: Module): string {
+  return m.snapshot.code
+    .replace(/(['"])(\.\.\/src\/[\w/.-]+\.js)\1/g, (whole, q: string, path: string) => {
+      const spec = m.snapshot.imports[path];
+      return spec ? `${q}${spec}${q}` : whole;
+    })
+    .trimEnd();
+}
 
 export function excerpt(m: Module): string {
-  if (m.snippet.kind === 'placeholder') return m.snippet.code;
-  const [from, to] = m.snippet.excerpt;
-  return m.snippet.code.split('\n').slice(from - 1, to).join('\n');
+  const [from, to] = m.excerpt;
+  return code(m).split('\n').slice(from - 1, to).join('\n');
 }

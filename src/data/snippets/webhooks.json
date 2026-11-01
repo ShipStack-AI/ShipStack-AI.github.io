@@ -1,0 +1,14 @@
+{
+  "module": "webhooks",
+  "package": "@shipstack-ai/webhooks",
+  "repo": "ShipStack-AI/webhooks",
+  "path": "examples/basic.ts",
+  "ref": "3ed810d8a531b935d7021e35f4af3fa308c95f9c",
+  "imports": {
+    "../src/index.js": "@shipstack-ai/webhooks",
+    "../src/stores/memory.js": "@shipstack-ai/webhooks/memory",
+    "../src/stores/postgres.js": "@shipstack-ai/webhooks/postgres",
+    "../src/testing/contract.js": "@shipstack-ai/webhooks/testing"
+  },
+  "code": "import { createWebhooks } from '../src/index.js';\nimport { memoryStore } from '../src/stores/memory.js';\nimport { startReceiver } from './receiver.js';\n\nconst customer = await startReceiver(); // stands in for your customer's server\n// allowHttp + allowPrivateNetworks are for this local demo only; production defaults are strict.\nconst webhooks = createWebhooks({\n  store: memoryStore(),\n  allowHttp: true,\n  allowPrivateNetworks: true,\n});\nconst endpoint = await webhooks.createEndpoint({ url: customer.url, events: ['invoice.*'] });\ncustomer.setSecret(endpoint.secret); // the customer stores the whsec_ secret you show them once\nconst result = await webhooks.send({ type: 'invoice.paid', data: { invoiceId: 'inv_1' } });\nconsole.log(result.deliveries); // [{ endpointId, status: 'success', attempts: 1 }]\ncustomer.close();\n"
+}

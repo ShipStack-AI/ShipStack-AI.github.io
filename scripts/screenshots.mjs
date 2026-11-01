@@ -10,7 +10,7 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const path = process.argv[2] ?? '/';
 const port = 4329;
 const server = spawn('npx', ['astro', 'preview', '--port', String(port)], { stdio: 'ignore' });
-const base = (process.env.BASE_PATH ?? '/website').replace(/\/$/, '');
+const base = (process.env.BASE_PATH || (process.env.SITE_URL ? '/' : '/website')).replace(/\/$/, '');
 const url = `http://localhost:${port}${base}${path}`;
 for (let i = 0; ; i++) {
   if (await fetch(url).then((r) => r.ok, () => false)) break;

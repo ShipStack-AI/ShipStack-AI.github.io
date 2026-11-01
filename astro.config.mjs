@@ -3,10 +3,12 @@ import mdx from '@astrojs/mdx';
 import { defineConfig } from 'astro/config';
 import { inkDark, inkLight } from './src/data/shiki-themes.mjs';
 
-// GitHub Pages project site by default. When the custom domain from the
-// phase-0 human tasks (H4) is live, set SITE_URL and BASE_PATH=/ in the deploy workflow.
-const site = process.env.SITE_URL ?? 'https://shipstack-ai.github.io';
-const base = process.env.BASE_PATH ?? '/website';
+// Where the site is served. Default: the GitHub Pages project site at
+// https://shipstack-ai.github.io/website/. For a custom domain set only SITE_URL
+// (e.g. https://shipstack.dev): the base path then defaults to "/".
+// BASE_PATH overrides the base path in either case.
+const site = process.env.SITE_URL || 'https://shipstack-ai.github.io';
+const base = process.env.BASE_PATH || (process.env.SITE_URL ? '/' : '/website');
 
 export default defineConfig({
   site,

@@ -1,0 +1,27 @@
+import { createRateLimiter, rateLimitHeaders, slidingWindow, tokenBucket } from '../src/index.js';
+import { memoryStore } from '../src/stores/memory.js';
+
+// Swap memoryStore() for redisStore({ client: new Redis(process.env.REDIS_URL) }) in production.
+const limiter = createRateLimiter({
+  store: memoryStore(),
+  algorithm: slidingWindow(3, '10s'),
+  onEvent: (e) => console.log('event:', e.type, e.subject?.id),
+});
+
+for (let i = 1; i <= 5; i++) {
+  const result = await limiter.limit('user:42');
+  const headers = rateLimitHeaders(result);
+  console.log(
+    `request ${i}: ${result.success ? 'allowed' : 'blocked'}`,
+    `remaining=${result.remaining}`,
+    `retry-after=${headers.get('Retry-After') ?? '-'}`,
+  );
+}
+
+await limiter.reset('user:42');
+console.log('after reset:', (await limiter.limit('user:42')).success ? 'allowed' : 'blocked');
+
+// A token bucket allows bursts, then refills steadily.
+const bucket = createRateLimiter({ store: memoryStore(), algorithm: tokenBucket(5, 1) });
+const burst = await Promise.all(Array.from({ length: 7 }, () => bucket.limit('api-key:abc')));
+console.log('burst of 7:', burst.map((r) => (r.success ? 'ok' : 'blocked')).join(' '));

@@ -1,0 +1,87 @@
+---
+import Content from '../content/quickstart.mdx';
+import SectionHead from './SectionHead.astro';
+---
+
+<section class="section" id="quickstart" aria-labelledby="quickstart-title">
+  <div class="wrap qs">
+    <SectionHead no="04" kicker="Quickstart" title="Four steps from an empty Hono app to a throttled API." id="quickstart-title">
+      About fifteen lines. Behind a proxy, key on a header your proxy sets and clients cannot spoof. For more than one
+      instance, swap in the Redis store.
+    </SectionHead>
+    <div class="prose">
+      <Content />
+    </div>
+    <aside class="qs__next">
+      <span class="label label--ink">Next on the line</span>
+      <p>
+        Step five, protecting the route with a session, arrives with <code>@shipstack-ai/auth</code> v0.1. It takes this
+        same limiter as its <code>rateLimiter</code> option. Until then, it is not on this page.
+      </p>
+    </aside>
+  </div>
+</section>
+
+<style>
+  .prose :global(.steps) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+  }
+  .prose :global(.steps > li) {
+    counter-increment: step;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+    min-width: 0;
+    padding-top: var(--s2);
+    border-top: 2px solid var(--ink);
+  }
+  .prose :global(.steps > li:nth-child(3)) {
+    grid-column: 1 / -1;
+  }
+  .prose :global(.steps > li:nth-child(3)) {
+    order: 3;
+  }
+  .prose :global(.steps > li:nth-child(4)) {
+    order: 4;
+    grid-column: 1 / -1;
+  }
+  .prose :global(h3) {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s2);
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+  }
+  .prose :global(h3)::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--signal-ink);
+  }
+  .prose :global(pre) {
+    border: 1px solid var(--line-strong);
+  }
+  .qs__next {
+    display: grid;
+    gap: var(--s1);
+    max-width: 720px;
+    margin-top: var(--s5);
+    padding: var(--s3);
+    border: 1.5px dashed var(--ink-3);
+  }
+  .qs__next p {
+    color: var(--ink-2);
+  }
+  @media (max-width: 760px) {
+    .prose :global(.steps) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,200 @@
+---
+import { modules } from '../data/modules';
+import SectionHead from './SectionHead.astro';
+
+const built = modules.filter((m) => m.status === 'built').length;
+
+// Category-level comparison only. No prices or feature counts for named products,
+// because those change and we would rather be vague than wrong.
+const cols = ['ShipStack', 'Paid starter kits', 'Hosted services'];
+const rows: { k: string; v: [string, string, string]; win?: 0 | 1 | 2 }[] = [
+  {
+    k: 'License',
+    v: ['MIT', 'Commercial license per buyer', 'Proprietary service (some are open source and self-hostable)'],
+  },
+  {
+    k: 'Cost',
+    v: ['Free. You run the infrastructure.', 'One-time purchase', 'Subscription or usage-based, usually with a free tier'],
+  },
+  {
+    k: 'Lock-in',
+    v: ['Per part, at the adapter. Remove one part, keep the rest.', 'You own the copied code, but it is shaped around the kit\'s stack.', 'Their API, SDK and data model'],
+    win: 0,
+  },
+  {
+    k: 'Your data',
+    v: ['In your database, in tables you can read', 'In your database', 'On the vendor\'s servers; export varies'],
+  },
+  {
+    k: 'Scope today',
+    v: [`${modules.length} parts planned, ${built} built. Backend only, no UI.`, 'A whole app on day one: UI, auth, billing, landing page', 'Deep and polished in one domain, with dashboards and support'],
+    win: 1,
+  },
+  {
+    k: 'Maturity',
+    v: ['v0.x, no independent security audit yet', 'Varies by kit', 'Years in production, teams on call'],
+    win: 2,
+  },
+];
+---
+
+<section class="section" id="compare" aria-labelledby="compare-title">
+  <div class="wrap">
+    <SectionHead no="05" kicker="Honest comparison" title="Where we win, and where we clearly don't." id="compare-title">
+      We lose on breadth and maturity, by a lot. If you want a complete app today, buy a starter kit. If you want SSO,
+      dashboards and someone else on call, use a hosted service such as Clerk, Knock or Trigger.dev. ShipStack is for the
+      code you would rather own.
+    </SectionHead>
+
+    <div class="cmp">
+      <table>
+        <caption class="visually-hidden">ShipStack compared with paid starter kits and hosted services</caption>
+        <thead>
+          <tr>
+            <td></td>
+            {cols.map((c, i) => <th scope="col" class:list={{ us: i === 0 }}>{c}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((r) => (
+              <tr>
+                <th scope="row">{r.k}</th>
+                {r.v.map((v, i) => (
+                  <td class:list={{ us: i === 0, win: r.win === i }} data-col={cols[i]}>
+                    {r.win === i && <span class="win__mark">Better here</span>}
+                    {v}
+                  </td>
+                ))}
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cmp {
+    overflow-x: auto;
+    border-top: 2px solid var(--ink);
+  }
+  table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  thead th {
+    padding: var(--s2);
+    text-align: left;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  tbody th {
+    width: 160px;
+    padding: var(--s2) var(--s2) var(--s2) 0;
+    text-align: left;
+    vertical-align: top;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--line);
+  }
+  thead td {
+    width: 160px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  tbody td {
+    padding: var(--s2);
+    vertical-align: top;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9375rem;
+  }
+  .us {
+    background: var(--paper-2);
+    color: var(--ink);
+    box-shadow:
+      inset 2px 0 0 var(--ink),
+      inset -2px 0 0 var(--ink);
+  }
+  thead th.us {
+    box-shadow:
+      inset 2px 0 0 var(--ink),
+      inset -2px 0 0 var(--ink),
+      inset 0 6px 0 var(--signal);
+  }
+  tbody tr:last-child .us {
+    box-shadow:
+      inset 2px 0 0 var(--ink),
+      inset -2px 0 0 var(--ink),
+      inset 0 -2px 0 var(--ink);
+  }
+  .win {
+    color: var(--ink);
+  }
+
+  /* Small screens: one block per criterion, the three answers stacked and labelled. */
+  @media (max-width: 760px) {
+    .cmp {
+      overflow: visible;
+    }
+    table,
+    tbody,
+    tr,
+    th,
+    td {
+      display: block;
+      width: auto;
+      min-width: 0;
+    }
+    thead {
+      display: none;
+    }
+    tbody tr {
+      padding: var(--s2) 0;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    tbody th {
+      padding: 0 0 var(--s1);
+      border: 0;
+      color: var(--ink);
+    }
+    tbody td {
+      padding: 10px 12px;
+      border: 0;
+      border-top: 1px solid var(--line);
+    }
+    tbody td::before {
+      content: attr(data-col);
+      display: block;
+      margin-bottom: 2px;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .us,
+    tbody tr:last-child .us {
+      box-shadow: inset 3px 0 0 var(--signal);
+    }
+  }
+  .win__mark {
+    display: block;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--signal-ink);
+  }
+</style>

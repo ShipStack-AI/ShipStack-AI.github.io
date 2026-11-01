@@ -1,0 +1,113 @@
+---
+import SectionHead from './SectionHead.astro';
+
+const specs = [
+  {
+    no: 'P-01',
+    title: 'Secure defaults',
+    body: 'Options are validated at construction and every problem is listed at once. Errors never carry secrets. When a store is down, rate-limit fails closed instead of quietly letting traffic through.',
+    tol: 'Fail fast · fail closed',
+  },
+  {
+    no: 'P-02',
+    title: 'Zero runtime deps in core',
+    body: 'Provider SDKs are optional peer dependencies behind subpath exports. Installing a part never drags in an SDK you did not import.',
+    tol: 'dependencies: {}',
+  },
+  {
+    no: 'P-03',
+    title: 'Contract-tested adapters',
+    body: 'Every adapter interface ships a conformance suite at /testing. The memory adapter and the reference adapter both pass it, and so must yours.',
+    tol: 'Same suite, every adapter',
+  },
+  {
+    no: 'P-04',
+    title: 'Semver and changelogs',
+    body: 'Releases go through Changesets. Error codes are public API: renaming one is a breaking change and gets a major version.',
+    tol: 'Breaking = major',
+  },
+];
+---
+
+<section class="section" id="principles" aria-labelledby="principles-title">
+  <div class="wrap">
+    <SectionHead no="06" kicker="Principles" title="The tolerances every part is held to." id="principles-title" />
+    <ol class="specs">
+      {
+        specs.map((s) => (
+          <li class="spec">
+            <span class="spec__no mono">{s.no}</span>
+            <h3>
+              {s.title.split(' ').map((w, i) => (
+                <>
+                  {i > 0 && ' '}
+                  {w.includes('-') ? <span class="nw">{w}</span> : w}
+                </>
+              ))}
+            </h3>
+            <p>{s.body}</p>
+            <span class="spec__tol mono">{s.tol}</span>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+    border-left: 1px solid var(--line-strong);
+  }
+  .spec {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+    padding: var(--s3);
+    border-right: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .nw {
+    white-space: nowrap;
+  }
+  .spec__no {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--signal-ink);
+  }
+  h3 {
+    min-height: 2em;
+    font-size: 1.5rem;
+    letter-spacing: -0.03em;
+    hyphens: manual;
+  }
+  p {
+    color: var(--ink-2);
+    font-size: 0.9375rem;
+  }
+  .spec__tol {
+    margin-top: auto;
+    padding-top: var(--s2);
+    border-top: 1px dashed var(--line-strong);
+    font-size: 0.75rem;
+    color: var(--ink-3);
+  }
+  @media (max-width: 1080px) {
+    .specs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 560px) {
+    .specs {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    h3 {
+      min-height: 0;
+    }
+  }
+</style>

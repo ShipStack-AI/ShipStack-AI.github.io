@@ -1,0 +1,49 @@
+<ol class="steps">
+<li>
+
+### Start a Hono app
+
+```sh
+pnpm create hono@latest my-api   # pick the nodejs template
+```
+
+</li>
+<li>
+
+### Add the part
+
+```sh
+pnpm add @shipstack-ai/rate-limit
+```
+
+</li>
+<li>
+
+### Wire it in as middleware
+
+```ts
+import { createRateLimiter, rateLimitHeaders, slidingWindow } from '@shipstack-ai/rate-limit';
+import { memoryStore } from '@shipstack-ai/rate-limit/memory';
+
+const limiter = createRateLimiter({ store: memoryStore(), algorithm: slidingWindow(10, '1m') });
+
+app.use('/api/*', async (c, next) => {
+  const result = await limiter.limit(`ip:${c.req.header('x-real-ip') ?? 'unknown'}`);
+  rateLimitHeaders(result).forEach((value, name) => c.header(name, value));
+  if (!result.success) return c.text('Too many requests', 429);
+  await next();
+});
+```
+
+</li>
+<li>
+
+### Hit it twelve times
+
+```sh
+for i in $(seq 12); do curl -s -o /dev/null -w "%{http_code} " localhost:3000/api/hello; done
+# 200 200 200 200 200 200 200 200 200 200 429 429
+```
+
+</li>
+</ol>
